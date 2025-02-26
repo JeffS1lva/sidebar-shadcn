@@ -267,7 +267,7 @@ function SidebarTrigger({
     <Button
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
-      variant="ghost"
+      variant="ghosts"
       size="icon"
       className={cn("h-7 w-7 pr-10 cursor-pointer ", className)}
       onClick={handleClick}
