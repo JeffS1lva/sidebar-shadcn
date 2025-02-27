@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -9,8 +9,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { BadgeAlert, BadgeCheck, Clock3, Search } from "lucide-react";
+import {
+  BadgeAlert,
+  BadgeCheck,
+  Clock3,
+  Download,
+  FileCode,
+  Search,
+} from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -18,7 +24,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"; // Importando os componentes de paginação
+} from "@/components/ui/pagination";
 
 interface Invoice {
   invoice: string;
@@ -31,26 +37,27 @@ interface Invoice {
 export function Notes() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage] = useState<number>(5); // Limitando a 5 itens por página
+  const [itemsPerPage] = useState<number>(5);
+  const [orderedInvoices, setOrderedInvoices] = useState<Invoice[]>([]);
 
   const invoicesData: Invoice[] = [
     {
       invoice: "INV001",
-      issueDate: "2025-02-01",
+      issueDate: "2021-02-01",
       authorizedBills: 2,
       totalAmount: "250.00",
       paymentStatus: "Pago",
     },
     {
       invoice: "INV002",
-      issueDate: "2025-02-05",
+      issueDate: "2000-02-05",
       authorizedBills: 1,
       totalAmount: "150.00",
       paymentStatus: "Pendente",
     },
     {
       invoice: "INV003",
-      issueDate: "2025-02-10",
+      issueDate: "2020-02-10",
       authorizedBills: 3,
       totalAmount: "350.00",
       paymentStatus: "Atrasado",
@@ -64,7 +71,7 @@ export function Notes() {
     },
     {
       invoice: "INV005",
-      issueDate: "2025-02-15",
+      issueDate: "2022-02-15",
       authorizedBills: 2,
       totalAmount: "550.00",
       paymentStatus: "Pago",
@@ -113,19 +120,38 @@ export function Notes() {
     },
   ];
 
-  const filteredInvoices = invoicesData.filter(
+  // Fixed useEffect hook
+  useEffect(() => {
+    // This function parses dates in YYYY-MM-DD format
+    const sortByDate = () => {
+      const sortedInvoices = [...invoicesData].sort((a, b) => {
+        // Convert string dates to Date objects for comparison
+        const dateA = new Date(a.issueDate);
+        const dateB = new Date(b.issueDate);
+        // Sort in descending order (newest first)
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      setOrderedInvoices(sortedInvoices);
+    };
+    
+    sortByDate();
+  }, [invoicesData]);
+
+  // Use orderedInvoices instead of directly filtering invoicesData
+  const filteredInvoices = (orderedInvoices.length > 0 ? orderedInvoices : invoicesData).filter(
     (invoice) =>
-      invoice.invoice.includes(searchTerm) ||
+      invoice.invoice.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.paymentStatus.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Função para formatar a data como "DD/MM/YYYY"
+  // Function to format date as "DD/MM/YYYY"
   const formatDate = (date: string): string => {
-    const [year, month, day] = date.split("-"); // Formato original: YYYY-MM-DD
+    const [year, month, day] = date.split("-");
     return `${day}/${month}/${year}`;
   };
 
-  // Função para formatar o valor total em Reais (R$)
+  // Function to format currency as BRL
   const formatCurrency = (value: string): string => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -137,7 +163,7 @@ export function Notes() {
     switch (status) {
       case "Pago":
         return {
-          icon: <BadgeCheck  className="text-green-500" />,
+          icon: <BadgeCheck className="text-green-500" />,
           color: "bg-green-100 text-gray-700",
         };
       case "Pendente":
@@ -155,21 +181,13 @@ export function Notes() {
     }
   };
 
-  // Lógica de paginação
+  // Pagination logic
   const indexOfLastInvoice = currentPage * itemsPerPage;
   const indexOfFirstInvoice = indexOfLastInvoice - itemsPerPage;
   const currentInvoices = filteredInvoices.slice(
     indexOfFirstInvoice,
     indexOfLastInvoice
   );
-
-  const handleGenerateBoleto = (invoiceId: string) => {
-    alert(`Gerando DANFE ${invoiceId}`);
-  };
-
-  const handleViewXML = (invoiceId: string) => {
-    alert(`Exibindo XML da nota ${invoiceId}`);
-  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -222,12 +240,10 @@ export function Notes() {
                   <TableCell className="font-medium">
                     {invoice.invoice}
                   </TableCell>
-                  <TableCell>{formatDate(invoice.issueDate)}</TableCell>{" "}
-                  {/* Data formatada */}
+                  <TableCell>{formatDate(invoice.issueDate)}</TableCell>
                   <TableCell>{invoice.authorizedBills}</TableCell>
                   <TableCell className="text-right">
-                    {formatCurrency(invoice.totalAmount)}{" "}
-                    {/* Valor formatado em Reais */}
+                    {formatCurrency(invoice.totalAmount)}
                   </TableCell>
                   <TableCell>
                     <div
@@ -238,14 +254,22 @@ export function Notes() {
                     </div>
                   </TableCell>
                   <TableCell className="flex gap-3">
-                    <Button
-                      onClick={() => handleGenerateBoleto(invoice.invoice)}
+                    <a
+                      href="#"
+                      target="_blank"
+                      title="Download NF-e"
+                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
                     >
-                      Download Danfe
-                    </Button>
-                    <Button onClick={() => handleViewXML(invoice.invoice)}>
-                      Exibir XML
-                    </Button>
+                      <Download size={30} />
+                    </a>
+
+                    <a
+                      href="#"
+                      title="Download XML"
+                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
+                    >
+                      <FileCode />
+                    </a>
                   </TableCell>
                 </TableRow>
               );
@@ -254,7 +278,6 @@ export function Notes() {
         </TableBody>
       </Table>
 
-      {/* Componente de Paginação do ShadCN */}
       <Pagination>
         <PaginationContent>
           <PaginationItem>

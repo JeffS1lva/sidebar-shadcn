@@ -269,17 +269,12 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghosts"
       size="icon"
-      className={cn("h-7 w-7 pr-10 cursor-pointer ", className)}
+      className={cn("h-7 w-7 cursor-pointer ", className)}
       onClick={handleClick}
       {...props}
     >
       <span className="flex items-center">
-        {isOpen ? <PanelRightClose /> : <PanelLeftClose />}
-        <span className="ml-2">
-          {" "}
-          {/* Margem à esquerda para espaçamento */}
-          {isOpen ? "Abrir" : "Fechar"}
-        </span>
+        {isOpen ? <PanelRightClose  /> : <PanelLeftClose />}
       </span>
     </Button>
   );

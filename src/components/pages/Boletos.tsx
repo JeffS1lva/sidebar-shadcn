@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { BadgeAlert, BadgeCheck, Clock3, Search } from "lucide-react";
+import {
+  BadgeAlert,
+  BadgeCheck,
+  Clock3,
+  Download,
+  Eye,
+  Search,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -10,7 +17,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
 interface Boleto {
   id: number;
@@ -23,13 +29,13 @@ interface Boleto {
 }
 
 export function Boletos() {
-  const [visibleBarcode, setVisibleBarcode] = useState<number | null>(null);
+  const [visibleBarcode] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   const boletosData: Boleto[] = [
     {
       id: 1,
-      parcela: "001",
+      parcela: "1",
       numeroNota: "N12345",
       status: "Pago",
       vencimento: "10/10/2023",
@@ -39,20 +45,20 @@ export function Boletos() {
     },
     {
       id: 2,
-      parcela: "002",
+      parcela: "2",
       numeroNota: "N12346",
       status: "Atrasado",
-      vencimento: "19/02/2025",
+      vencimento: "19/02/2024",
       valor: "R$ 600,00",
       codigoBarras:
         "https://via.placeholder.com/300x100.png?text=Codigo+Barras+2",
     },
     {
       id: 3,
-      parcela: "003",
+      parcela: "3",
       numeroNota: "N12347",
       status: "Pendente",
-      vencimento: "16/10/2025",
+      vencimento: "16/10/2023",
       valor: "R$ 1.600,00",
       codigoBarras:
         "https://via.placeholder.com/300x100.png?text=Codigo+Barras+3",
@@ -63,10 +69,20 @@ export function Boletos() {
 
   useEffect(() => {
     console.log("Atualizando boletos...");
-    const boletosComStatusAtualizado = boletosData.map((boleto) => ({
-      ...boleto,
-    }));
-    setBoletos(boletosComStatusAtualizado);
+    // Função para converter data do formato DD/MM/YYYY para objeto Date
+    const converterData = (dataString: string): Date => {
+      const [dia, mes, ano] = dataString.split('/').map(Number);
+      return new Date(ano, mes - 1, dia); // Mês em JS começa em 0
+    };
+
+    // Ordenar boletos por data de vencimento (mais recente para mais antigo)
+    const boletosOrdenados = [...boletosData].sort((a, b) => {
+      const dataA = converterData(a.vencimento);
+      const dataB = converterData(b.vencimento);
+      return dataB.getTime() - dataA.getTime(); // Ordem decrescente
+    });
+
+    setBoletos(boletosOrdenados);
   }, []);
 
   const filteredBoletos = boletos.filter(
@@ -98,16 +114,11 @@ export function Boletos() {
     }
   };
 
-  const toggleBarcode = (id: number) => {
-    if (visibleBarcode === id) {
-      setVisibleBarcode(null);
-    } else {
-      setVisibleBarcode(id);
-    }
-  };
+  const fileUrl = "/boleto.pdf";
+  const fileName = "Boleto";
 
   return (
-    <div className="p-1   md:p-6">
+    <div className="p-1 md:p-6">
       <h2 className="text-xl  md:text-2xl font-bold mb-4">
         Registros de Boletos
       </h2>
@@ -167,11 +178,25 @@ export function Boletos() {
                       <TableCell>{boleto.vencimento}</TableCell>
                       <TableCell>{boleto.valor}</TableCell>
                       <TableCell>
-                        <Button onClick={() => toggleBarcode(boleto.id)}>
-                          {visibleBarcode === boleto.id
-                            ? "Ocultar Código"
-                            : "Exibir Código"}
-                        </Button>
+                        <div className="flex gap-2">
+                          <a
+                            href={fileUrl}
+                            target="_blank"
+                            title="Exibir Boleto"
+                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
+                          >
+                            <Eye size={30} />
+                          </a>
+
+                          <a
+                            href={fileUrl}
+                            download={fileName}
+                            title="Download Boleto"
+                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
+                          >
+                            <Download size={30} />
+                          </a>
+                        </div>
                       </TableCell>
                     </TableRow>
                     {visibleBarcode === boleto.id && (
