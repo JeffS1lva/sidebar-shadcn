@@ -1,4 +1,4 @@
-import * as React from "react"
+import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -10,11 +10,17 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import {  ChevronDown, MoreHorizontal } from "lucide-react"
+} from "@tanstack/react-table";
+import {
+  ChevronDown,
+  Hourglass,
+  MoreHorizontal,
+  Package,
+  PackageOpen,
+} from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -23,8 +29,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -32,41 +38,87 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
+import { CalendarioFil } from "../CalendarioFil";
 
-const data: Payment[] = [
+type ColumnKey =
+  | "idPedido"
+  | "dataLancamento"
+  | "dataEntrega"
+  | "statusPedido"
+  | "dataPicking"
+  | "statusPicking";
+
+// Mapping object with correct typing
+const columnLabels: Record<ColumnKey, string> = {
+  idPedido: "Número do Pedido",
+  dataLancamento: "Data de Lançamento",
+  dataEntrega: "Data de Entrega",
+  statusPedido: "Status do Pedido",
+  dataPicking: "Data de Picking",
+  statusPicking: "Status de Picking",
+};
+
+export type DataPedidos = {
+  idPedido: string;
+  dataLancamento: string;
+  dataEntrega: string;
+  dataPicking: string;
+  statusPicking: "Aberto" | "Em Andamento" | "Fechado";
+  statusPedido: "Aberto" | "Em Andamento" | "Fechado";
+};
+
+const data: DataPedidos[] = [
   {
     idPedido: "375410",
     dataLancamento: "2025-02-15",
     dataEntrega: "2025-02-20",
-    statusPedido: "success",
     dataPicking: "2025-02-17",
-    statusPicking: "completo",
-    status: "success",
+    statusPicking: "Em Andamento",
+    statusPedido: "Em Andamento",
   },
   {
     idPedido: "375411",
     dataLancamento: "2025-02-15",
     dataEntrega: "2025-02-20",
-    statusPedido: "success",
     dataPicking: "2025-02-17",
-    statusPicking: "completo",
-    status: "pending",
+    statusPicking: "Aberto",
+    statusPedido: "Aberto",
+  },
+  {
+    idPedido: "375411",
+    dataLancamento: "2025-02-15",
+    dataEntrega: "2025-02-20",
+    dataPicking: "2025-02-17",
+    statusPicking: "Fechado",
+    statusPedido: "Fechado",
   },
   // Adicione mais itens de exemplo conforme necessário
-]
+];
 
-export type Payment = {
-  idPedido: string
-  dataLancamento: string
-  dataEntrega: string
-  statusPedido: string
-  dataPicking: string
-  statusPicking: string
-  status: "pending" | "processing" | "success" | "failed"
-}
+const getStatusPicking = (process: "Aberto" | "Em Andamento" | "Fechado") => {
+  switch (process) {
+    case "Aberto":
+      return {
+        icon: <PackageOpen size={24} className="text-green-500" />,
+        color: "bg-green-100 text-gray-600",
+      };
+    case "Em Andamento":
+      return {
+        icon: <Hourglass size={21} className="text-yellow-500" />,
+        color: "bg-yellow-100 text-gray-600",
+      };
+    case "Fechado":
+      return {
+        icon: <Package size={24} className="text-red-500" />,
+        color: "bg-red-100 text-gray-600",
+      };
+    default:
+      return { icon: null, color: "" };
+  }
+};
 
-export const columns: ColumnDef<Payment>[] = [
+export const columns: ColumnDef<DataPedidos>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -100,48 +152,74 @@ export const columns: ColumnDef<Payment>[] = [
     accessorKey: "dataLancamento",
     header: "Data de Lançamento",
     cell: ({ row }) => {
-      const data = new Date(row.getValue("dataLancamento"))
-      const formattedDate = new Intl.DateTimeFormat("pt-BR").format(data)
-      return <div>{formattedDate}</div>
+      const data = new Date(row.getValue("dataLancamento"));
+      const formattedDate = new Intl.DateTimeFormat("pt-BR").format(data);
+      return <div>{formattedDate}</div>;
     },
   },
   {
     accessorKey: "dataEntrega",
     header: "Data de Entrega",
     cell: ({ row }) => {
-      const data = new Date(row.getValue("dataEntrega"))
-      const formattedDate = new Intl.DateTimeFormat("pt-BR").format(data)
-      return <div>{formattedDate}</div>
+      const data = new Date(row.getValue("dataEntrega"));
+      const formattedDate = new Intl.DateTimeFormat("pt-BR").format(data);
+      return <div>{formattedDate}</div>;
     },
   },
   {
     accessorKey: "statusPedido",
     header: "Status do Pedido",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("statusPedido")}</div>
-    ),
+    cell: ({ row }) => {
+      const process = row.getValue("statusPedido") as
+        | "Aberto"
+        | "Em Andamento"
+        | "Fechado";
+      const { icon, color } = getStatusPicking(process);
+
+      return (
+        <div
+          className={`flex items-center gap-2 px-3 py-1 rounded-full w-fit ${color}`}
+        >
+          {icon}
+          <span>{process}</span>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "dataPicking",
     header: "Data de Picking",
     cell: ({ row }) => {
-      const data = new Date(row.getValue("dataPicking"))
-      const formattedDate = new Intl.DateTimeFormat("pt-BR").format(data)
-      return <div>{formattedDate}</div>
+      const data = new Date(row.getValue("dataPicking"));
+      const formattedDate = new Intl.DateTimeFormat("pt-BR").format(data);
+      return <div>{formattedDate}</div>;
     },
   },
   {
     accessorKey: "statusPicking",
     header: "Status de Picking",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("statusPicking")}</div>
-    ),
+    cell: ({ row }) => {
+      const process = row.getValue("statusPicking") as
+        | "Aberto"
+        | "Em Andamento"
+        | "Fechado";
+      const { icon, color } = getStatusPicking(process);
+
+      return (
+        <div
+          className={`flex items-center gap-2 px-3 py-1 rounded-full w-fit ${color}`}
+        >
+          {icon}
+          <span>{process}</span>
+        </div>
+      );
+    },
   },
   {
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
-      const payment = row.original
+      const payment = row.original;
 
       return (
         <DropdownMenu>
@@ -163,16 +241,19 @@ export const columns: ColumnDef<Payment>[] = [
             <DropdownMenuItem>View payment details</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )
+      );
     },
   },
-]
+];
 
 export function Pedidos() {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
     data,
@@ -191,23 +272,26 @@ export function Pedidos() {
       columnVisibility,
       rowSelection,
     },
-  })
+  });
 
   return (
     <div className="w-full p-7">
-      <div className="flex items-center py-4">
+      <div className="flex items-center py-4 gap-4">
         <Input
           placeholder="Digite N° Pedido..."
-          value={(table.getColumn("idPedido")?.getFilterValue() as string) ?? ""}
+          value={
+            (table.getColumn("idPedido")?.getFilterValue() as string) ?? ""
+          }
           onChange={(event) =>
             table.getColumn("idPedido")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
+        <CalendarioFil />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown />
+              Filtro <ChevronDown />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -224,9 +308,9 @@ export function Pedidos() {
                       column.toggleVisibility(!!value)
                     }
                   >
-                    {column.id}
+                    {columnLabels[column.id as ColumnKey] || column.id}
                   </DropdownMenuCheckboxItem>
-                )
+                );
               })}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -246,7 +330,7 @@ export function Pedidos() {
                             header.getContext()
                           )}
                     </TableHead>
-                  )
+                  );
                 })}
               </TableRow>
             ))}
@@ -306,5 +390,5 @@ export function Pedidos() {
         </div>
       </div>
     </div>
-  )
+  );
 }
