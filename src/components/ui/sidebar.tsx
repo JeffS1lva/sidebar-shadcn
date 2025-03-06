@@ -267,14 +267,14 @@ function SidebarTrigger({
     <Button
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
-      variant="ghosts"
+      variant="ghost"
       size="icon"
       className={cn("h-7 w-7 cursor-pointer ", className)}
       onClick={handleClick}
       {...props}
     >
       <span className="flex items-center">
-        {isOpen ? <PanelRightClose  /> : <PanelLeftClose />}
+        {isOpen ? <PanelRightClose /> : <PanelLeftClose />}
       </span>
     </Button>
   );
@@ -454,12 +454,13 @@ function SidebarGroupContent({
 
 function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
   return (
-    <ul
-      data-slot="sidebar-menu"
-      data-sidebar="menu"
-      className={cn("flex w-full min-w-0 flex-col gap-1 mt-5", className)}
-      {...props}
-    />
+      <ul
+        data-slot="sidebar-menu"
+        data-sidebar="menu"
+        className={cn("flex w-full min-w-0 flex-col gap-1 mt-5", className)}
+        {...props}
+      />
+    
   );
 }
 

@@ -11,25 +11,10 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {
-  ChevronDown,
-  Hourglass,
-  MoreHorizontal,
-  Package,
-  PackageOpen,
-} from "lucide-react";
+import { Hourglass, Package, PackageOpen } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -39,25 +24,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CalendarioFil } from "../CalendarioFil";
-
-type ColumnKey =
-  | "idPedido"
-  | "dataLancamento"
-  | "dataEntrega"
-  | "statusPedido"
-  | "dataPicking"
-  | "statusPicking";
-
-// Mapping object with correct typing
-const columnLabels: Record<ColumnKey, string> = {
-  idPedido: "Número do Pedido",
-  dataLancamento: "Data de Lançamento",
-  dataEntrega: "Data de Entrega",
-  statusPedido: "Status do Pedido",
-  dataPicking: "Data de Picking",
-  statusPicking: "Status de Picking",
-};
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../ui/pagination";
 
 export type DataPedidos = {
   idPedido: string;
@@ -86,14 +60,38 @@ const data: DataPedidos[] = [
     statusPedido: "Aberto",
   },
   {
-    idPedido: "375411",
+    idPedido: "375412",
     dataLancamento: "2025-02-15",
     dataEntrega: "2025-02-20",
     dataPicking: "2025-02-17",
     statusPicking: "Fechado",
     statusPedido: "Fechado",
   },
-  // Adicione mais itens de exemplo conforme necessário
+  {
+    idPedido: "375413",
+    dataLancamento: "2025-02-15",
+    dataEntrega: "2025-02-20",
+    dataPicking: "2025-02-17",
+    statusPicking: "Aberto",
+    statusPedido: "Aberto",
+  },
+  {
+    idPedido: "375414",
+    dataLancamento: "2025-02-15",
+    dataEntrega: "2025-02-20",
+    dataPicking: "2025-02-17",
+    statusPicking: "Em Andamento",
+    statusPedido: "Em Andamento",
+  },
+  {
+    idPedido: "375415",
+    dataLancamento: "2025-02-15",
+    dataEntrega: "2025-02-20",
+    dataPicking: "2025-02-17",
+    statusPicking: "Aberto",
+    statusPedido: "Aberto",
+  },
+  // Adicione mais itens conforme necessário
 ];
 
 const getStatusPicking = (process: "Aberto" | "Em Andamento" | "Fechado") => {
@@ -178,7 +176,7 @@ export const columns: ColumnDef<DataPedidos>[] = [
 
       return (
         <div
-          className={`flex items-center gap-2 px-3 py-1 rounded-full w-fit ${color}`}
+          className={`flex items-center gap-2 px-3 py-1 rounded-full w-full ${color}`}
         >
           {icon}
           <span>{process}</span>
@@ -207,40 +205,11 @@ export const columns: ColumnDef<DataPedidos>[] = [
 
       return (
         <div
-          className={`flex items-center gap-2 px-3 py-1 rounded-full w-fit ${color}`}
+          className={`flex items-center gap-2 px-3 py-1 rounded-full w-full ${color}`}
         >
           {icon}
           <span>{process}</span>
         </div>
-      );
-    },
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const payment = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.idPedido)}
-            >
-              Copy payment ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       );
     },
   },
@@ -254,6 +223,12 @@ export function Pedidos() {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [currentPage, setCurrentPage] = React.useState(1); // Estado da página atual
+  const [itemsPerPage] = React.useState(5); // Número de itens por página
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const table = useReactTable({
     data,
@@ -272,72 +247,50 @@ export function Pedidos() {
       columnVisibility,
       rowSelection,
     },
+    pageCount: Math.ceil(data.length / itemsPerPage), // Definir o número total de páginas
   });
+
+  // Obter as linhas para a página atual
+  const rowsToDisplay = table
+    .getRowModel()
+    .rows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="w-full p-7">
+      <h1 className="text-2xl font-bold">Pedidos</h1>
       <div className="flex items-center py-4 gap-4">
         <Input
           placeholder="Digite N° Pedido..."
           value={
-            (table.getColumn("idPedido")?.getFilterValue() as string) ?? ""
+            (table.getColumn("idPedido")?.getFilterValue() as string) || ""
           }
           onChange={(event) =>
             table.getColumn("idPedido")?.setFilterValue(event.target.value)
           }
-          className="max-w-sm"
+          className="max-w-sm  rounded"
         />
-        <CalendarioFil />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Filtro <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {columnLabels[column.id as ColumnKey] || column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+            {rowsToDisplay.length ? (
+              rowsToDisplay.map((row) => (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
@@ -365,29 +318,47 @@ export function Pedidos() {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
+      <div className="flex items-center justify-end">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage > 1) handlePageChange(currentPage - 1);
+                }}
+              />
+            </PaginationItem>
+            {[...Array(Math.ceil(data.length / itemsPerPage))].map(
+              (_, index) => (
+                <PaginationItem key={index}>
+                  <PaginationLink
+                    href="#"
+                    isActive={currentPage === index + 1}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(index + 1);
+                    }}
+                  >
+                    {index + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            )}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage < Math.ceil(data.length / itemsPerPage)) {
+                    handlePageChange(currentPage + 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
     </div>
   );

@@ -1,22 +1,40 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import {
-  BadgeAlert,
-  BadgeCheck,
-  Clock3,
-  Download,
-  Eye,
-  Search,
-} from "lucide-react";
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Package, PackageOpen, Hourglass } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 
 interface Boleto {
   id: number;
@@ -25,197 +43,257 @@ interface Boleto {
   status: "Pago" | "Pendente" | "Atrasado";
   vencimento: string;
   valor: string;
-  codigoBarras: string;
 }
 
+const boletosData: Boleto[] = [
+  {
+    id: 1,
+    parcela: "1",
+    numeroNota: "N12345",
+    status: "Pago",
+    vencimento: "10/10/2023",
+    valor: "R$ 500,00",
+  },
+  {
+    id: 2,
+    parcela: "2",
+    numeroNota: "N12346",
+    status: "Atrasado",
+    vencimento: "19/02/2024",
+    valor: "R$ 600,00",
+  },
+  {
+    id: 3,
+    parcela: "3",
+    numeroNota: "N12347",
+    status: "Pendente",
+    vencimento: "16/10/2023",
+    valor: "R$ 1.600,00",
+  },
+];
+
+const getStatusIcon = (status: "Pago" | "Pendente" | "Atrasado") => {
+  switch (status) {
+    case "Pago":
+      return { icon: <PackageOpen size={24} className="text-green-500" />, color: "bg-green-100 text-gray-600" };
+    case "Pendente":
+      return { icon: <Hourglass size={21} className="text-yellow-500" />, color: "bg-yellow-100 text-gray-600" };
+    case "Atrasado":
+      return { icon: <Package size={24} className="text-red-500" />, color: "bg-red-100 text-gray-600" };
+    default:
+      return { icon: null, color: "" };
+  }
+};
+
+export type BoletoType = {
+  id: number;
+  parcela: string;
+  numeroNota: string;
+  status: "Pago" | "Pendente" | "Atrasado";
+  vencimento: string;
+  valor: string;
+};
+
+export const columns: ColumnDef<BoletoType>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "parcela",
+    header: "Número da Parcela",
+    cell: ({ row }) => row.getValue("parcela"),
+  },
+  {
+    accessorKey: "numeroNota",
+    header: "Número da Nota",
+    cell: ({ row }) => row.getValue("numeroNota"),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as "Pago" | "Pendente" | "Atrasado";
+      const { icon, color } = getStatusIcon(status);
+      return (
+        <div className={`flex items-center gap-2 px-3 py-1 rounded-full w-full ${color}`}>
+          {icon}
+          <span>{status}</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "vencimento",
+    header: "Data de Vencimento",
+    cell: ({ row }) => row.getValue("vencimento"),
+  },
+  {
+    accessorKey: "valor",
+    header: () => <div className="text-right">Valor Total</div>,
+    cell: ({ row }) => <div className="text-right font-medium">{row.getValue("valor")}</div>,
+  },
+  {
+    id: "actions",
+    enableHiding: false,
+    cell: ({ row }) => {
+      const boleto = row.original;
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+            <DropdownMenuItem>Visualizar Boleto</DropdownMenuItem>
+            <DropdownMenuItem>Baixar Boleto</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+  },
+];
+
 export function Boletos() {
-  const [visibleBarcode] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
 
-  const boletosData: Boleto[] = [
-    {
-      id: 1,
-      parcela: "1",
-      numeroNota: "N12345",
-      status: "Pago",
-      vencimento: "10/10/2023",
-      valor: "R$ 500,00",
-      codigoBarras:
-        "https://via.placeholder.com/300x100.png?text=Codigo+Barras+1",
+  const table = useReactTable({
+    data: boletosData,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
     },
-    {
-      id: 2,
-      parcela: "2",
-      numeroNota: "N12346",
-      status: "Atrasado",
-      vencimento: "19/02/2024",
-      valor: "R$ 600,00",
-      codigoBarras:
-        "https://via.placeholder.com/300x100.png?text=Codigo+Barras+2",
-    },
-    {
-      id: 3,
-      parcela: "3",
-      numeroNota: "N12347",
-      status: "Pendente",
-      vencimento: "16/10/2023",
-      valor: "R$ 1.600,00",
-      codigoBarras:
-        "https://via.placeholder.com/300x100.png?text=Codigo+Barras+3",
-    },
-  ];
-
-  const [boletos, setBoletos] = useState<Boleto[]>([]);
-
-  useEffect(() => {
-    console.log("Atualizando boletos...");
-    // Função para converter data do formato DD/MM/YYYY para objeto Date
-    const converterData = (dataString: string): Date => {
-      const [dia, mes, ano] = dataString.split('/').map(Number);
-      return new Date(ano, mes - 1, dia); // Mês em JS começa em 0
-    };
-
-    // Ordenar boletos por data de vencimento (mais recente para mais antigo)
-    const boletosOrdenados = [...boletosData].sort((a, b) => {
-      const dataA = converterData(a.vencimento);
-      const dataB = converterData(b.vencimento);
-      return dataB.getTime() - dataA.getTime(); // Ordem decrescente
-    });
-
-    setBoletos(boletosOrdenados);
-  }, []);
-
-  const filteredBoletos = boletos.filter(
-    (boleto) =>
-      boleto.numeroNota.includes(searchTerm) ||
-      boleto.parcela.includes(searchTerm) ||
-      boleto.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getStatusInfo = (status: "Pago" | "Pendente" | "Atrasado") => {
-    switch (status) {
-      case "Pago":
-        return {
-          icon: <BadgeCheck className="text-green-500" />,
-          color: "bg-green-100 text-gray-600",
-        };
-      case "Pendente":
-        return {
-          icon: <Clock3 className="text-yellow-500" />,
-          color: "bg-yellow-100 text-gray-600",
-        };
-      case "Atrasado":
-        return {
-          icon: <BadgeAlert className="text-red-500" />,
-          color: "bg-red-100 text-gray-600",
-        };
-      default:
-        return { icon: null, color: "" };
-    }
-  };
-
-  const fileUrl = "/boleto.pdf";
-  const fileName = "Boleto";
+  });
 
   return (
-    <div className="p-1 md:p-6">
-      <h2 className="text-xl  md:text-2xl font-bold mb-4">
-        Registros de Boletos
-      </h2>
-
-      <div className="mb-4">
-        <div className="relative">
-          <Search
-            className="absolute top-1/2 left-3 transform -translate-y-1/2 "
-            size={20}
-          />
-          <Input
-            type="text"
-            placeholder="Digite N° Nota, Parcela ou Status do Boleto"
-            className="pl-10 pr-4 py-2 border border-gray-300  rounded w-full"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+    <div className="w-full">
+      <div className="flex items-center py-4">
+        <Input
+          placeholder="Filtrar por Número de Nota, Parcela ou Status"
+          value={(table.getColumn("numeroNota")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("numeroNota")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Colunas <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-
-      <div className="overflow-x-auto">
+      <div className="rounded-md border">
         <Table>
-          <TableCaption>Lista de boletos consultados.</TableCaption>
           <TableHeader>
-            <TableRow>
-              <TableHead>Número da Parcela</TableHead>
-              <TableHead>Número da Nota</TableHead>
-              <TableHead>Status do Boleto</TableHead>
-              <TableHead>Data de Vencimento</TableHead>
-              <TableHead>Valor Total</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
           </TableHeader>
           <TableBody>
-            {filteredBoletos.length === 0 ? (
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   Nenhum boleto encontrado.
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredBoletos.map((boleto) => {
-                const { icon, color } = getStatusInfo(boleto.status);
-                return (
-                  <React.Fragment key={boleto.id}>
-                    <TableRow>
-                      <TableCell>{boleto.parcela}</TableCell>
-                      <TableCell>{boleto.numeroNota}</TableCell>
-                      <TableCell>
-                        <div
-                          className={`flex items-center gap-2 ${color} px-3 py-1 rounded-full`}
-                        >
-                          {icon}
-                          <span>{boleto.status}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{boleto.vencimento}</TableCell>
-                      <TableCell>{boleto.valor}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <a
-                            href={fileUrl}
-                            target="_blank"
-                            title="Exibir Boleto"
-                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
-                          >
-                            <Eye size={30} />
-                          </a>
-
-                          <a
-                            href={fileUrl}
-                            download={fileName}
-                            title="Download Boleto"
-                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
-                          >
-                            <Download size={30} />
-                          </a>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    {visibleBarcode === boleto.id && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center">
-                          <img
-                            src={boleto.codigoBarras}
-                            alt="Código de Barras"
-                            className="w-64 mx-auto"
-                          />
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                );
-              })
             )}
           </TableBody>
         </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          {table.getFilteredSelectedRowModel().rows.length} de{" "}
+          {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+        </div>
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Próxima
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -30,12 +30,14 @@ import {
   DropdownMenuItem,
 } from "@radix-ui/react-dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { Button } from "../ui/button";
+import { useNavigate } from "react-router-dom";
 
 // Menu items.
 const items = [
   {
     title: "Home",
-    url: "/", // Atualize a URL para a rota correta
+    url: "/home", // Atualize a URL para a rota correta
     icon: Home,
   },
   {
@@ -55,10 +57,17 @@ const items = [
   },
 ];
 
-export function NavegationMenu() {
+export function NavegationMenu({ onLogout }: { onLogout?: () => void }) {
   // Estado para armazenar o nome do usuário
   const [username] = useState("Usuário Off");
+  const navigate = useNavigate();
 
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+      navigate("/login");
+    }
+  };
   return (
     <Sidebar>
       <SidebarContent>
@@ -121,9 +130,11 @@ export function NavegationMenu() {
                     <span>Configuração</span>
                   </DropdownMenuItem>
                   <div className="border w-full border-zinc-600"></div>
-                  <DropdownMenuItem className="flex items-center gap-2 pl-3 pb-1  outline-0 hover:bg-zinc-600 hover:rounded-md py-0.5">
-                    <LogOut size={15} />
-                    <span>Sair</span>
+                  <DropdownMenuItem className="flex items-center pt-1  gap-2  pb-1 outline-0 hover:bg-zinc-600 hover:rounded-md py-0.5">
+                    <Button variant={"logout"} onClick={handleLogout}>
+                      <LogOut size={15} />
+                      Sair
+                    </Button>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
