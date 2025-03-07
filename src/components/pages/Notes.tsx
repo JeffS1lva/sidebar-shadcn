@@ -120,38 +120,33 @@ export function Notes() {
     },
   ];
 
-  // Fixed useEffect hook
   useEffect(() => {
-    // This function parses dates in YYYY-MM-DD format
     const sortByDate = () => {
       const sortedInvoices = [...invoicesData].sort((a, b) => {
-        // Convert string dates to Date objects for comparison
         const dateA = new Date(a.issueDate);
         const dateB = new Date(b.issueDate);
-        // Sort in descending order (newest first)
         return dateB.getTime() - dateA.getTime();
       });
-      
+
       setOrderedInvoices(sortedInvoices);
     };
-    
+
     sortByDate();
   }, [invoicesData]);
 
-  // Use orderedInvoices instead of directly filtering invoicesData
-  const filteredInvoices = (orderedInvoices.length > 0 ? orderedInvoices : invoicesData).filter(
+  const filteredInvoices = (
+    orderedInvoices.length > 0 ? orderedInvoices : invoicesData
+  ).filter(
     (invoice) =>
       invoice.invoice.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.paymentStatus.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Function to format date as "DD/MM/YYYY"
   const formatDate = (date: string): string => {
     const [year, month, day] = date.split("-");
     return `${day}/${month}/${year}`;
   };
 
-  // Function to format currency as BRL
   const formatCurrency = (value: string): string => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -181,7 +176,6 @@ export function Notes() {
     }
   };
 
-  // Pagination logic
   const indexOfLastInvoice = currentPage * itemsPerPage;
   const indexOfFirstInvoice = indexOfLastInvoice - itemsPerPage;
   const currentInvoices = filteredInvoices.slice(
@@ -194,90 +188,83 @@ export function Notes() {
   };
 
   return (
-    <div className="p-4 ml-3">
-      <h2 className="text-2xl font-bold mb-4 ">Notas Fiscais</h2>
-
-      <div className="mb-4">
-        <div className="relative">
-          <Search
-            className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-500"
-            size={20}
-          />
-          <Input
-            type="text"
-            placeholder="Digite o N° da Nota ou Status"
-            className="pl-10 pr-4 py-2 border border-gray-300 rounded w-full"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+    <div className="w-full p-7">
+      <h1 className="text-2xl font-bold">Notas Fiscais</h1>
+      <div className="flex items-center py-4">
+        <Input
+          placeholder="Filtrar por Número de Nota ou Status"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
       </div>
-
-      <Table>
-        <TableCaption>Lista de suas notas fiscais recentes.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px]">N° Nota</TableHead>
-            <TableHead>Data da Emissão</TableHead>
-            <TableHead>Boletos Autorizados</TableHead>
-            <TableHead className="text-right">Valor Total</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {currentInvoices.length === 0 ? (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center">
-                Nenhuma nota encontrada.
-              </TableCell>
+              <TableHead className="w-[100px] text-center">N° Nota</TableHead>
+              <TableHead className="text-center">Data da Emissão</TableHead>
+              <TableHead className="text-center">Boletos Autorizados</TableHead>
+              <TableHead className="text-center">Valor Total</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-center">Ações</TableHead>
             </TableRow>
-          ) : (
-            currentInvoices.map((invoice) => {
-              const { icon, color } = getStatusInfo(invoice.paymentStatus);
-              return (
-                <TableRow key={invoice.invoice}>
-                  <TableCell className="font-medium">
-                    {invoice.invoice}
-                  </TableCell>
-                  <TableCell>{formatDate(invoice.issueDate)}</TableCell>
-                  <TableCell>{invoice.authorizedBills}</TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(invoice.totalAmount)}
-                  </TableCell>
-                  <TableCell>
-                    <div
-                      className={`flex items-center gap-2 ${color} px-3 py-1 rounded-full`}
-                    >
-                      {icon}
-                      <span>{invoice.paymentStatus}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="flex gap-3">
-                    <a
-                      href="#"
-                      target="_blank"
-                      title="Download NF-e"
-                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
-                    >
-                      <Download size={30} />
-                    </a>
+          </TableHeader>
 
-                    <a
-                      href="#"
-                      title="Download XML"
-                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
-                    >
-                      <FileCode />
-                    </a>
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+          <TableBody>
+            {currentInvoices.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center">
+                  Nenhuma nota encontrada.
+                </TableCell>
+              </TableRow>
+            ) : (
+              currentInvoices.map((invoice) => {
+                const { icon, color } = getStatusInfo(invoice.paymentStatus);
+                return (
+                  <TableRow key={invoice.invoice}>
+                    <TableCell >
+                      {invoice.invoice}
+                    </TableCell>
+                    <TableCell>{formatDate(invoice.issueDate)}</TableCell>
+                    <TableCell>{invoice.authorizedBills}</TableCell>
+                    <TableCell className="text-center">
+                      {formatCurrency(invoice.totalAmount)}
+                    </TableCell>
+                    <TableCell>
+                      <div
+                        className={`flex items-center gap-2 ${color} px-3 py-1 rounded-full`}
+                      >
+                        {icon}
+                        <span>{invoice.paymentStatus}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="flex gap-3 justify-center">
+                      <a
+                        href="#"
+                        target="_blank"
+                        title="Download NF-e"
+                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
+                      >
+                        <Download size={20} />
+                      </a>
 
+                      <a
+                        href="#"
+                        title="Download XML"
+                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
+                      >
+                        <FileCode size={20} />
+                      </a>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <TableCaption>Lista de notas fiscais recentes.</TableCaption>
       <Pagination>
         <PaginationContent>
           <PaginationItem>

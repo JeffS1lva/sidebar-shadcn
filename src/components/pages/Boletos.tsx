@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,19 +13,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Package, PackageOpen, Hourglass } from "lucide-react";
+import { Package, PackageOpen, Hourglass, Download, Eye } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -35,6 +24,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from "../ui/pagination";
 
 interface Boleto {
   id: number;
@@ -70,16 +67,50 @@ const boletosData: Boleto[] = [
     vencimento: "16/10/2023",
     valor: "R$ 1.600,00",
   },
+  {
+    id: 4,
+    parcela: "4",
+    numeroNota: "N12347",
+    status: "Pendente",
+    vencimento: "16/10/2023",
+    valor: "R$ 1.600,00",
+  },
+  {
+    id: 5,
+    parcela: "5",
+    numeroNota: "N12347",
+    status: "Pendente",
+    vencimento: "16/10/2023",
+    valor: "R$ 1.600,00",
+  },
+  {
+    id: 6,
+    parcela: "6",
+    numeroNota: "N12347",
+    status: "Pendente",
+    vencimento: "16/10/2023",
+    valor: "R$ 1.600,00",
+  },
+  // Adicione mais boletos conforme necessário
 ];
 
 const getStatusIcon = (status: "Pago" | "Pendente" | "Atrasado") => {
   switch (status) {
     case "Pago":
-      return { icon: <PackageOpen size={24} className="text-green-500" />, color: "bg-green-100 text-gray-600" };
+      return {
+        icon: <PackageOpen size={24} className="text-green-500" />,
+        color: "bg-green-100 text-gray-600",
+      };
     case "Pendente":
-      return { icon: <Hourglass size={21} className="text-yellow-500" />, color: "bg-yellow-100 text-gray-600" };
+      return {
+        icon: <Hourglass size={21} className="text-yellow-500" />,
+        color: "bg-yellow-100 text-gray-600",
+      };
     case "Atrasado":
-      return { icon: <Package size={24} className="text-red-500" />, color: "bg-red-100 text-gray-600" };
+      return {
+        icon: <Package size={24} className="text-red-500" />,
+        color: "bg-red-100 text-gray-600",
+      };
     default:
       return { icon: null, color: "" };
   }
@@ -94,44 +125,30 @@ export type BoletoType = {
   valor: string;
 };
 
+const fileUrl = "/boleto.pdf";
+const fileName = "boleto.pdf";
+
 export const columns: ColumnDef<BoletoType>[] = [
   {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     accessorKey: "parcela",
-    header: "Número da Parcela",
+    header: () => <div className="text-center">Parcelas</div>,
     cell: ({ row }) => row.getValue("parcela"),
   },
   {
     accessorKey: "numeroNota",
-    header: "Número da Nota",
+    header: () => <div className="text-center">Número da Nota</div>,
     cell: ({ row }) => row.getValue("numeroNota"),
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: () => <div className="text-center">Status</div>,
     cell: ({ row }) => {
       const status = row.getValue("status") as "Pago" | "Pendente" | "Atrasado";
       const { icon, color } = getStatusIcon(status);
       return (
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full w-full ${color}`}>
+        <div
+          className={`flex items-center gap-2 px-3 py-1 rounded-full w-full ${color}`}
+        >
           {icon}
           <span>{status}</span>
         </div>
@@ -140,33 +157,51 @@ export const columns: ColumnDef<BoletoType>[] = [
   },
   {
     accessorKey: "vencimento",
-    header: "Data de Vencimento",
+    header: () => <div className="text-center">Vencimento</div>,
     cell: ({ row }) => row.getValue("vencimento"),
   },
   {
     accessorKey: "valor",
     header: () => <div className="text-right">Valor Total</div>,
-    cell: ({ row }) => <div className="text-right font-medium">{row.getValue("valor")}</div>,
+    cell: ({ row }) => (
+      <div className="text-right font-medium">{row.getValue("valor")}</div>
+    ),
   },
   {
     id: "actions",
-    enableHiding: false,
+    header: "",
     cell: ({ row }) => {
-      const boleto = row.original;
+      function handleDownload(_original: BoletoType): void {
+        throw new Error("Function not implemented.");
+      }
+
+      function handlePrint(_original: BoletoType): void {
+        throw new Error("Function not implemented.");
+      }
+
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-            <DropdownMenuItem>Visualizar Boleto</DropdownMenuItem>
-            <DropdownMenuItem>Baixar Boleto</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center justify-center gap-2">
+          <a
+            title="Download Boleto"
+            href={fileUrl}
+            download={fileName}
+            onClick={() => handleDownload(row.original)}
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
+          >
+            <Download className="h-4 w-4" />
+            <span className="sr-only">Download</span>
+          </a>
+          <a
+            title="Visualizar Boleto"
+            target="_blank"
+            href={fileUrl}
+            onClick={() => handlePrint(row.original)}
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
+          >
+            <Eye />
+            <span className="sr-only">Imprimir</span>
+          </a>
+        </div>
       );
     },
   },
@@ -177,6 +212,12 @@ export function Boletos() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
+  const [currentPage, setCurrentPage] = useState(1); // Estado da página atual
+  const [itemsPerPage] = useState(5); // Número de itens por página
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const table = useReactTable({
     data: boletosData,
@@ -195,45 +236,28 @@ export function Boletos() {
       columnVisibility,
       rowSelection,
     },
+    pageCount: Math.ceil(boletosData.length / itemsPerPage), // Definir o número total de páginas
   });
 
+  // Obter as linhas para a página atual
+  const rowsToDisplay = table
+    .getRowModel()
+    .rows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
-    <div className="w-full">
+    <div className="w-full p-7">
+      <h1 className="text-2xl font-bold">Boletos</h1>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filtrar por Número de Nota, Parcela ou Status"
-          value={(table.getColumn("numeroNota")?.getFilterValue() as string) ?? ""}
+          value={
+            (table.getColumn("numeroNota")?.getFilterValue() as string) ?? ""
+          }
           onChange={(event) =>
             table.getColumn("numeroNota")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
       <div className="rounded-md border">
         <Table>
@@ -244,26 +268,38 @@ export function Boletos() {
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+            {rowsToDisplay.length ? (
+              rowsToDisplay.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   Nenhum boleto encontrado.
                 </TableCell>
               </TableRow>
@@ -271,29 +307,49 @@ export function Boletos() {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} de{" "}
-          {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Próxima
-          </Button>
-        </div>
+      <div className="flex items-center justify-start space-x-2 py-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage > 1) handlePageChange(currentPage - 1);
+                }}
+              />
+            </PaginationItem>
+            {[...Array(Math.ceil(boletosData.length / itemsPerPage))].map(
+              (_, index) => (
+                <PaginationItem key={index}>
+                  <PaginationLink
+                    href="#"
+                    isActive={currentPage === index + 1}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(index + 1);
+                    }}
+                  >
+                    {index + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            )}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (
+                    currentPage < Math.ceil(boletosData.length / itemsPerPage)
+                  ) {
+                    handlePageChange(currentPage + 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
     </div>
   );

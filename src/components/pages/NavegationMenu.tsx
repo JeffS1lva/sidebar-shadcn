@@ -8,7 +8,6 @@ import {
   ChevronUp,
   User2,
   LogOut,
-  BadgeCheck,
 } from "lucide-react";
 
 import {
@@ -68,6 +67,11 @@ export function NavegationMenu({ onLogout }: { onLogout?: () => void }) {
       navigate("/login");
     }
   };
+
+  const handlePasswordReset = () => {
+    navigate("/reset-password")
+  }
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -103,7 +107,7 @@ export function NavegationMenu({ onLogout }: { onLogout?: () => void }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   side="left"
-                  className="w-56 flex flex-col text-white gap-2 bg-gray-800 border-1 border-gray-500 rounded-sm mb-3 px-1 py-1 cursor-pointer ml-3"
+                  className="w-56 flex flex-col text-white gap-2 bg-gray-500 border-1 border-gray-500 rounded-sm mb-3 px-1 py-1 cursor-pointer ml-3"
                 >
                   <DropdownMenuItem className="flex  items-center gap-2 pl-2 pt-1 outline-0 hover:bg-zinc-600 hover:rounded-md py-0.5">
                     <Avatar className="size-9 ">
@@ -115,19 +119,15 @@ export function NavegationMenu({ onLogout }: { onLogout?: () => void }) {
                     </Avatar>
                     <div className="flex flex-col ">
                       <span>Usuário</span>
-                      <span className="text-sm text-zinc-400">
+                      <span className="text-sm text-zinc-300">
                         users@test.com
                       </span>
                     </div>
                   </DropdownMenuItem>
                   <div className="border w-full border-zinc-600"></div>
-                  <DropdownMenuItem className="flex items-center gap-2 pl-3 outline-0 hover:bg-zinc-600 hover:rounded-md py-0.5">
-                    <BadgeCheck size={16} />
-                    <span>Conta</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 pl-3 outline-0 hover:bg-zinc-600 hover:rounded-md py-0.5">
+                  <DropdownMenuItem className="flex items-center gap-2 pl-3 outline-0 hover:bg-zinc-600 hover:rounded-md py-1" onClick={handlePasswordReset}>
                     <Settings size={16} />
-                    <span>Configuração</span>
+                    <span>Redefinir Senha</span>
                   </DropdownMenuItem>
                   <div className="border w-full border-zinc-600"></div>
                   <DropdownMenuItem className="flex items-center pt-1  gap-2  pb-1 outline-0 hover:bg-zinc-600 hover:rounded-md py-0.5">

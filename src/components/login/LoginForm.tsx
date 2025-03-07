@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import axios from "axios"; // Importando o axios
 
 interface LoginFormProps {
   className?: string;
@@ -24,17 +25,55 @@ export function LoginForm({
 }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false); // Para indicar o carregamento
+  const [error, setError] = useState(""); // Para capturar erros
   const navigate = useNavigate(); // Usado para navegação programática
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true); // Inicia o carregamento
 
-    // Simulando a validação de login
-    if (email === "user@example.com" && password === "password123") {
-      onLoginSuccess(); // Chama a função para marcar como autenticado
-      navigate("/home"); // Redireciona para a página de home
-    } else {
-      alert("Credenciais inválidas. Tente novamente.");
+    try {
+      // Envia as credenciais de login para a API usando axios
+      const response = await axios.post(
+        "https://10.101.200.180:7001/api/Auth/login",
+        {
+          email,
+          password, // Corpo da requisição com email e senha
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Se a resposta for bem-sucedida, pode acessar a resposta da API
+      const data = response.data;
+
+      if (data.token) { // Supondo que a API retorne um token se o login for bem-sucedido
+        onLoginSuccess(); // Chama a função para marcar como autenticado
+        navigate("/home"); // Redireciona para a página de home
+      } else {
+        throw new Error("Credenciais inválidas.");
+      }
+    } catch (error: unknown) {
+      // Aqui tratamos o erro de forma mais robusta
+      if (axios.isAxiosError(error)) {
+        // Se for erro do Axios, mostra detalhes da resposta
+        console.error("Erro da API:", error.response?.data); // Log do erro para depuração
+        setError(error.response?.data?.message || "Erro de rede. Tente novamente.");
+      } else if (error instanceof Error) {
+        // Se for erro do tipo JavaScript
+        console.error("Erro JavaScript:", error.message); // Log do erro para depuração
+        setError(error.message);
+      } else {
+        // Caso o erro seja de um tipo desconhecido
+        console.error("Erro desconhecido");
+        setError("Ocorreu um erro desconhecido. Tente novamente.");
+      }
+    } finally {
+      setLoading(false); // Finaliza o carregamento
     }
   };
 
@@ -82,8 +121,13 @@ export function LoginForm({
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Login
+
+              {/* Exibindo o erro, se houver */}
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+
+              {/* Botão de login com carregamento */}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Carregando..." : "Login"}
               </Button>
             </div>
           </form>

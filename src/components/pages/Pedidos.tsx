@@ -13,8 +13,6 @@ import {
 } from "@tanstack/react-table";
 import { Hourglass, Package, PackageOpen } from "lucide-react";
 
-import { Checkbox } from "@/components/ui/checkbox";
-
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -117,38 +115,17 @@ const getStatusPicking = (process: "Aberto" | "Em Andamento" | "Fechado") => {
 };
 
 export const columns: ColumnDef<DataPedidos>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
+  
   {
     accessorKey: "idPedido",
-    header: "Número do Pedido",
+    header: () => <div className="text-center">Número do Pedido</div>,
     cell: ({ row }) => (
       <div className="capitalize">{row.getValue("idPedido")}</div>
     ),
   },
   {
     accessorKey: "dataLancamento",
-    header: "Data de Lançamento",
+    header: () => <div className="text-center">Lançamento</div>,
     cell: ({ row }) => {
       const data = new Date(row.getValue("dataLancamento"));
       const formattedDate = new Intl.DateTimeFormat("pt-BR").format(data);
@@ -157,7 +134,7 @@ export const columns: ColumnDef<DataPedidos>[] = [
   },
   {
     accessorKey: "dataEntrega",
-    header: "Data de Entrega",
+    header: () => <div className="text-center">Data de Entrega</div>,
     cell: ({ row }) => {
       const data = new Date(row.getValue("dataEntrega"));
       const formattedDate = new Intl.DateTimeFormat("pt-BR").format(data);
@@ -166,7 +143,7 @@ export const columns: ColumnDef<DataPedidos>[] = [
   },
   {
     accessorKey: "statusPedido",
-    header: "Status do Pedido",
+    header: () => <div className="text-center">Status do Pedido</div>,
     cell: ({ row }) => {
       const process = row.getValue("statusPedido") as
         | "Aberto"
@@ -186,7 +163,7 @@ export const columns: ColumnDef<DataPedidos>[] = [
   },
   {
     accessorKey: "dataPicking",
-    header: "Data de Picking",
+    header: () => <div className="text-center">Data de Picking</div>,
     cell: ({ row }) => {
       const data = new Date(row.getValue("dataPicking"));
       const formattedDate = new Intl.DateTimeFormat("pt-BR").format(data);
@@ -195,7 +172,7 @@ export const columns: ColumnDef<DataPedidos>[] = [
   },
   {
     accessorKey: "statusPicking",
-    header: "Status de Picking",
+    header:() => <div className="text-center">Status de Picking</div>,
     cell: ({ row }) => {
       const process = row.getValue("statusPicking") as
         | "Aberto"
