@@ -4,46 +4,80 @@ import { NavegationMenu } from "@/components/pages/NavegationMenu";
 import { Boletos } from "./components/pages/Boletos";
 import { Notes } from "./components/pages/Notes";
 import { Pedidos } from "./components/pages/Pedidos";
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { Home } from "./components/pages/Home";
 import { LoginForm } from "./components/login/LoginForm";
+import { Toaster } from "sonner"; // Importando Toaster para exibir notificações
 
 export function App() {
+  const [authData, setAuthData] = useState<{
+    login: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  } | null>(null);
+
   // Verifica se o usuário está autenticado no localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem("isAuthenticated") === "true";
+    const storedAuthData = localStorage.getItem("authData");
+    return storedAuthData ? JSON.parse(storedAuthData) : null;
   });
-  
-  const handleLoginSuccess = () => {
+
+  const handleLoginSuccess = (userData: {
+    login: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  }) => {
     // Salva o estado de autenticação no localStorage
     localStorage.setItem("isAuthenticated", "true");
-    setIsAuthenticated(true);
+    localStorage.setItem("authData", JSON.stringify(userData)); // Salva os dados do usuário no localStorage
+    setIsAuthenticated(userData);
+    setAuthData(userData);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated");
-    setIsAuthenticated(false);
+    localStorage.removeItem("authData"); // Remove os dados do usuário do localStorage
+    setIsAuthenticated(null);
+    setAuthData(null);
   };
+
+  useEffect(() => {
+    // Recupera os dados de autenticação do localStorage ao recarregar a página
+    const storedAuthData = localStorage.getItem("authData");
+    if (storedAuthData) {
+      setAuthData(JSON.parse(storedAuthData));
+    }
+  }, []);
 
   return (
     <Router>
       <Routes>
         {/* Rota pública do login */}
-        <Route 
-          path="/login" 
-          element={
-            isAuthenticated ? 
-              <Navigate to="/home" /> : 
-              <LoginForm onLoginSuccess={handleLoginSuccess} />
-          } 
-        />
-        
-        {/* Rotas protegidas */}
-        <Route 
-          path="/*" 
+        <Route
+          path="/login"
           element={
             isAuthenticated ? (
-              <AuthenticatedLayout onLogout={handleLogout}>
+              <Navigate to="/home" />
+            ) : (
+              <LoginForm onLoginSuccess={handleLoginSuccess} />
+            )
+          }
+        />
+
+        {/* Rotas protegidas */}
+        <Route
+          path="/*"
+          element={
+            isAuthenticated ? (
+              <AuthenticatedLayout authData={authData} onLogout={handleLogout}>
                 <Routes>
                   <Route path="/home" element={<Home />} />
                   <Route path="/pedidos" element={<Pedidos />} />
@@ -56,19 +90,29 @@ export function App() {
             ) : (
               <Navigate to="/login" />
             )
-          } 
+          }
         />
-        
+
         {/* Redireciona a rota raiz para login */}
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
+
+      {/* Toaster para as notificações do Sonner */}
+      <Toaster />
     </Router>
   );
 }
 
 // Componente para o layout após autenticação
-function AuthenticatedLayout({ children, onLogout }: { children: React.ReactNode, onLogout: () => void }) {
-  // Verifica se estamos em uma navegação real (não apenas um remount do componente)
+function AuthenticatedLayout({
+  children,
+  onLogout,
+  authData,
+}: {
+  children: React.ReactNode;
+  onLogout: () => void;
+  authData: { login: string; email: string; firstName: string; lastName: string } | null;
+}) {
   const location = useLocation();
 
   useEffect(() => {
@@ -81,7 +125,7 @@ function AuthenticatedLayout({ children, onLogout }: { children: React.ReactNode
 
   return (
     <SidebarProvider>
-      <NavegationMenu onLogout={onLogout} />
+      <NavegationMenu onLogout={onLogout} authData={authData} />
       <main className="w-full h-full">
         <SidebarTrigger />
         {children}
