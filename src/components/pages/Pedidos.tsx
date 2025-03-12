@@ -11,7 +11,14 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Hourglass, Package, PackageOpen, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Hourglass,
+  Package,
+  PackageOpen,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -51,6 +58,7 @@ import {
 
 export type DataPedidos = {
   idPedido: string;
+  numeroNota: string; // Adicionado campo para número da nota
   dataLancamento: string;
   dataEntrega: string;
   dataPicking: string;
@@ -61,6 +69,7 @@ export type DataPedidos = {
 const data: DataPedidos[] = [
   {
     idPedido: "375410",
+    numeroNota: "NF-435678",
     dataLancamento: "2025-02-15",
     dataEntrega: "2025-02-20",
     dataPicking: "2025-02-17",
@@ -69,6 +78,7 @@ const data: DataPedidos[] = [
   },
   {
     idPedido: "375411",
+    numeroNota: "NF-435679",
     dataLancamento: "2025-02-15",
     dataEntrega: "2025-02-20",
     dataPicking: "2025-02-17",
@@ -77,6 +87,7 @@ const data: DataPedidos[] = [
   },
   {
     idPedido: "375412",
+    numeroNota: "NF-435680",
     dataLancamento: "2024-11-15",
     dataEntrega: "2024-11-20",
     dataPicking: "2024-11-17",
@@ -85,6 +96,7 @@ const data: DataPedidos[] = [
   },
   {
     idPedido: "375413",
+    numeroNota: "NF-435681",
     dataLancamento: "2024-12-16",
     dataEntrega: "2024-12-21",
     dataPicking: "2024-12-18",
@@ -93,6 +105,7 @@ const data: DataPedidos[] = [
   },
   {
     idPedido: "375414",
+    numeroNota: "NF-435682",
     dataLancamento: "2025-01-17",
     dataEntrega: "2025-01-22",
     dataPicking: "2025-01-19",
@@ -101,6 +114,7 @@ const data: DataPedidos[] = [
   },
   {
     idPedido: "375415",
+    numeroNota: "NF-435683",
     dataLancamento: "2025-03-18",
     dataEntrega: "2025-03-23",
     dataPicking: "2025-03-20",
@@ -138,6 +152,13 @@ export const columns: ColumnDef<DataPedidos>[] = [
     header: () => <div className="text-center">Número do Pedido</div>,
     cell: ({ row }) => (
       <div className="capitalize">{row.getValue("idPedido")}</div>
+    ),
+  },
+  {
+    accessorKey: "numeroNota",
+    header: () => <div className="text-center">Número da Nota</div>,
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("numeroNota")}</div>
     ),
   },
   {
@@ -189,7 +210,7 @@ export const columns: ColumnDef<DataPedidos>[] = [
   },
   {
     accessorKey: "statusPicking",
-    header:() => <div className="text-center">Status de Picking</div>,
+    header: () => <div className="text-center">Status de Picking</div>,
     cell: ({ row }) => {
       const process = row.getValue("statusPicking") as
         | "Aberto"
@@ -221,7 +242,7 @@ const CalendarioPersonalizado = ({
 }) => {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = React.useState<Date>(date || today);
-  
+
   // Gerar anos para o seletor (5 anos atrás até 5 anos à frente)
   const years = Array.from(
     { length: 11 },
@@ -257,20 +278,27 @@ const CalendarioPersonalizado = ({
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        
+
         <div className="flex items-center space-x-2">
           {/* Exibir nome do mês atual */}
-          <span className="font-medium">
-            {format(currentMonth, "MMMM", { locale: ptBR })}
+          <span className="font-medium ">
+            {format(currentMonth, "MMMM", { locale: ptBR })
+              .charAt(0)
+              .toUpperCase() +
+              format(currentMonth, "MMMM", { locale: ptBR })
+                .slice(1)
+                .toLowerCase()}
           </span>
-          
+
           {/* Seletor de ano */}
           <Select
             defaultValue={currentMonth.getFullYear().toString()}
             onValueChange={handleYearChange}
           >
             <SelectTrigger className="h-8 w-20">
-              <SelectValue placeholder={currentMonth.getFullYear().toString()} />
+              <SelectValue
+                placeholder={currentMonth.getFullYear().toString()}
+              />
             </SelectTrigger>
             <SelectContent>
               {years.map((year) => (
@@ -281,7 +309,7 @@ const CalendarioPersonalizado = ({
             </SelectContent>
           </Select>
         </div>
-        
+
         <Button
           variant="outline"
           size="icon"
@@ -291,7 +319,7 @@ const CalendarioPersonalizado = ({
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
-      
+
       <CalendarComponent
         mode="single"
         selected={date}
@@ -299,7 +327,6 @@ const CalendarioPersonalizado = ({
         month={currentMonth}
         onMonthChange={setCurrentMonth}
         disabled={disabledDates}
-        className="border-none"
       />
     </div>
   );
@@ -383,7 +410,9 @@ const DateRangePicker = ({
         </Popover>
       </div>
 
-      <Button onClick={onFilter} className="md:ml-2">Filtrar</Button>
+      <Button onClick={onFilter} className="md:ml-2">
+        Filtrar
+      </Button>
     </div>
   );
 };
@@ -398,58 +427,125 @@ export function Pedidos() {
   const [rowSelection, setRowSelection] = React.useState({});
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(5);
-  
+
   // Estados para o filtro de data
   const [startDate, setStartDate] = React.useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined);
   const [filteredData, setFilteredData] = React.useState<DataPedidos[]>(data);
-  
-  // Estado para controlar qual campo de data está sendo usado para filtrar
-  const [dateField, setDateField] = React.useState<"dataLancamento" | "dataEntrega" | "dataPicking">("dataLancamento");
+
+  // Estado para controlar qual campo está sendo usado para filtrar
+  const [filterField, setFilterField] = React.useState<string>("idPedido");
+
+  // Estado para o valor do input de filtro
+  const [filterValue, setFilterValue] = React.useState<string>("");
+
+  // Placeholders personalizados para cada tipo de filtro
+  const placeholders = {
+    idPedido: "Digite N° Pedido...",
+    numeroNota: "Digite N° da Nota...",
+    statusPedido: "Digite 'Aberto', 'Em Andamento' ou 'Fechado'...",
+    statusPicking: "Digite 'Aberto', 'Em Andamento' ou 'Fechado'...",
+    dataLancamento: "Digite N° Pedido...",
+    dataEntrega: "Digite N° Pedido...",
+    dataPicking: "Digite N° Pedido...",
+  };
+
+  // Labels para cada tipo de filtro
+  const filterLabels = {
+    idPedido: "Número do Pedido",
+    numeroNota: "Número da Nota",
+    statusPedido: "Status do Pedido",
+    statusPicking: "Status de Picking",
+    dataLancamento: "Data de Lançamento",
+    dataEntrega: "Data de Entrega",
+    dataPicking: "Data de Picking",
+  };
+
+  // Função para atualizar o campo de filtro
+  const handleFilterFieldChange = (value: string) => {
+    setFilterField(value);
+    setFilterValue(""); // Limpa o valor do input ao trocar o tipo de filtro
+
+    // Limpa filtros da tabela
+    if (value !== "idPedido") {
+      table.getColumn("idPedido")?.setFilterValue("");
+    }
+
+    // Se o campo for um dos campos de status, filtramos por esse status
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  // Função para filtrar os dados por data
-  const filterByDateRange = () => {
-    if (!startDate) return;
-    
+  // Função para filtrar os dados
+  const applyFilters = () => {
     let filtered = [...data];
-    
-    // Filtrar pelo campo de data selecionado
-    filtered = filtered.filter(item => {
-      const itemDate = new Date(item[dateField]);
-      
-      // Se só temos a data inicial, checamos se a data do item é maior ou igual
-      if (startDate && !endDate) {
-        // Resetamos as horas para comparar apenas as datas
-        const startDateOnly = new Date(startDate);
-        startDateOnly.setHours(0, 0, 0, 0);
-        
-        const itemDateOnly = new Date(itemDate);
-        itemDateOnly.setHours(0, 0, 0, 0);
-        
-        return itemDateOnly >= startDateOnly;
-      }
-      
-      // Se temos data inicial e final, checamos se está dentro do range
-      if (startDate && endDate) {
-        const startDateOnly = new Date(startDate);
-        startDateOnly.setHours(0, 0, 0, 0);
-        
-        const endDateOnly = new Date(endDate);
-        endDateOnly.setHours(23, 59, 59, 999); // Final do dia
-        
-        const itemDateOnly = new Date(itemDate);
-        itemDateOnly.setHours(12, 0, 0, 0); // Meio-dia para evitar problemas de timezone
-        
-        return itemDateOnly >= startDateOnly && itemDateOnly <= endDateOnly;
-      }
-      
-      return true;
-    });
-    
+
+    // Filtro por texto (pedido, nota ou status)
+    if (filterValue) {
+      filtered = filtered.filter((item) => {
+        if (filterField === "idPedido") {
+          return item.idPedido
+            .toLowerCase()
+            .includes(filterValue.toLowerCase());
+        } else if (filterField === "numeroNota") {
+          return item.numeroNota
+            .toLowerCase()
+            .includes(filterValue.toLowerCase());
+        } else if (filterField === "statusPedido") {
+          return item.statusPedido
+            .toLowerCase()
+            .includes(filterValue.toLowerCase());
+        } else if (filterField === "statusPicking") {
+          return item.statusPicking
+            .toLowerCase()
+            .includes(filterValue.toLowerCase());
+        }
+        return true;
+      });
+    }
+
+    // Filtro por data (apenas para campos de data)
+    if (
+      startDate &&
+      ["dataLancamento", "dataEntrega", "dataPicking"].includes(filterField)
+    ) {
+      filtered = filtered.filter((item) => {
+        const itemDate = new Date(
+          item[filterField as keyof DataPedidos] as string
+        );
+
+        // Se só temos a data inicial, checamos se a data do item é maior ou igual
+        if (startDate && !endDate) {
+          // Resetamos as horas para comparar apenas as datas
+          const startDateOnly = new Date(startDate);
+          startDateOnly.setHours(0, 0, 0, 0);
+
+          const itemDateOnly = new Date(itemDate);
+          itemDateOnly.setHours(0, 0, 0, 0);
+
+          return itemDateOnly >= startDateOnly;
+        }
+
+        // Se temos data inicial e final, checamos se está dentro do range
+        if (startDate && endDate) {
+          const startDateOnly = new Date(startDate);
+          startDateOnly.setHours(0, 0, 0, 0);
+
+          const endDateOnly = new Date(endDate);
+          endDateOnly.setHours(23, 59, 59, 999); // Final do dia
+
+          const itemDateOnly = new Date(itemDate);
+          itemDateOnly.setHours(12, 0, 0, 0); // Meio-dia para evitar problemas de timezone
+
+          return itemDateOnly >= startDateOnly && itemDateOnly <= endDateOnly;
+        }
+
+        return true;
+      });
+    }
+
     setFilteredData(filtered);
     setCurrentPage(1); // Volta para a primeira página após filtrar
   };
@@ -485,62 +581,109 @@ export function Pedidos() {
     setEndDate(undefined);
     setFilteredData(data);
     setCurrentPage(1);
+    setFilterValue("");
     table.getColumn("idPedido")?.setFilterValue("");
   };
+
+  // Monitorar mudanças no valor do filtro para o campo idPedido (para compatibilidade)
+  React.useEffect(() => {
+    if (filterField === "idPedido") {
+      const columnFilterValue = table
+        .getColumn("idPedido")
+        ?.getFilterValue() as string;
+      if (columnFilterValue !== filterValue) {
+        setFilterValue(columnFilterValue || "");
+      }
+    }
+  }, [table.getColumn("idPedido")?.getFilterValue()]);
+
+  // Atualizar filtro da tabela quando mudar o valor do input
+  React.useEffect(() => {
+    if (filterField === "idPedido") {
+      table.getColumn("idPedido")?.setFilterValue(filterValue);
+    }
+  }, [filterValue, filterField]);
 
   return (
     <div className="w-full p-7">
       <h1 className="text-2xl font-bold">Pedidos</h1>
       <div className="flex flex-col space-y-4 py-4">
-        <div className="flex flex-col md:flex-row md:items-end gap-4">
-          <div className="w-full md:w-auto">
-            <Label htmlFor="searchPedido" className="mb-2 block">Número do Pedido</Label>
+        {/* Linha superior com input (70%) e select */}
+        <div className="flex gap-4 items-end">
+          {/* Input de filtro (70%) */}
+          <div className="w-[70%]">
+            <Label htmlFor="searchField" className="mb-2 block">
+              {filterLabels[filterField as keyof typeof filterLabels]}
+            </Label>
             <Input
-              id="searchPedido"
-              placeholder="Digite N° Pedido..."
-              value={(table.getColumn("idPedido")?.getFilterValue() as string) || ""}
-              onChange={(event) =>
-                table.getColumn("idPedido")?.setFilterValue(event.target.value)
+              id="searchField"
+              placeholder={
+                placeholders[filterField as keyof typeof placeholders]
               }
-              className="rounded"
+              value={filterValue}
+              onChange={(event) => setFilterValue(event.target.value)}
+              className="rounded w-full"
             />
           </div>
-          
-          <div className="w-full md:w-auto">
-            <Label htmlFor="dateFieldSelect" className="mb-2 block">Filtrar por</Label>
+
+          {/* Select para escolher o tipo de filtro (ocupa o restante) */}
+          <div className="flex-1">
+            <Label htmlFor="filterFieldSelect" className="mb-2 block">
+              Filtrar por
+            </Label>
             <Select
-              defaultValue="dataLancamento"
-              onValueChange={(value) => setDateField(value as "dataLancamento" | "dataEntrega" | "dataPicking")}
+              defaultValue="idPedido"
+              value={filterField}
+              onValueChange={handleFilterFieldChange}
             >
-              <SelectTrigger id="dateFieldSelect" className="w-[200px]">
-                <SelectValue placeholder="Selecione o campo de data" />
+              <SelectTrigger id="filterFieldSelect" className="w-full">
+                <SelectValue placeholder="Selecione o campo para filtrar" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="dataLancamento">Data de Lançamento</SelectItem>
+                <SelectItem value="idPedido">Número do Pedido</SelectItem>
+                <SelectItem value="numeroNota">Número da Nota</SelectItem>
+                <SelectItem value="statusPedido">Status do Pedido</SelectItem>
+                <SelectItem value="statusPicking">Status de Picking</SelectItem>
+                <SelectItem value="dataLancamento">
+                  Data de Lançamento
+                </SelectItem>
                 <SelectItem value="dataEntrega">Data de Entrega</SelectItem>
                 <SelectItem value="dataPicking">Data de Picking</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          
-          <Button 
-            variant="outline" 
-            onClick={clearFilters}
-            className="ml-auto"
-          >
-            Limpar Filtros
-          </Button>
         </div>
-        
-        <DateRangePicker
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-          onFilter={filterByDateRange}
-        />
+
+        {/* Segunda linha com DateRangePicker (apenas visível para campos de data) e botão Limpar Filtros */}
+        <div className="flex gap-4 items-start justify-between">
+          {/* DateRangePicker à esquerda, só aparece para campos de data */}
+          <div className="flex-1">
+            {["dataLancamento", "dataEntrega", "dataPicking"].includes(
+              filterField
+            ) ? (
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onFilter={applyFilters}
+              />
+            ) : (
+              <Button onClick={applyFilters} className="mt-5">
+                Filtrar
+              </Button>
+            )}
+          </div>
+
+          {/* Botão limpar filtros à direita */}
+          <div className="flex items-end h-full mt-5">
+            <Button variant="outline" onClick={clearFilters}>
+              Limpar Filtros
+            </Button>
+          </div>
+        </div>
       </div>
-      
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -622,7 +765,9 @@ export function Pedidos() {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (currentPage < Math.ceil(filteredData.length / itemsPerPage)) {
+                  if (
+                    currentPage < Math.ceil(filteredData.length / itemsPerPage)
+                  ) {
                     handlePageChange(currentPage + 1);
                   }
                 }}
