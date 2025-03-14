@@ -345,6 +345,7 @@ const DateRangePicker = ({
   onStartDateChange: (date: Date | undefined) => void;
   onEndDateChange: (date: Date | undefined) => void;
   onFilter: () => void;
+  disabled?: boolean
 }) => {
   return (
     <div className="flex flex-col md:flex-row items-end space-y-4 md:space-y-0 md:space-x-4">
@@ -471,7 +472,11 @@ export function Pedidos() {
       table.getColumn("idPedido")?.setFilterValue("");
     }
 
-    // Se o campo for um dos campos de status, filtramos por esse status
+    // Limpa as datas se trocar para um campo que não é de data
+    if (!["dataLancamento", "dataEntrega", "dataPicking"].includes(value)) {
+      setStartDate(undefined);
+      setEndDate(undefined);
+    }
   };
 
   const handlePageChange = (page: number) => {
@@ -506,44 +511,47 @@ export function Pedidos() {
       });
     }
 
-    // Filtro por data (apenas para campos de data)
-    if (
-      startDate &&
-      ["dataLancamento", "dataEntrega", "dataPicking"].includes(filterField)
-    ) {
-      filtered = filtered.filter((item) => {
-        const itemDate = new Date(
-          item[filterField as keyof DataPedidos] as string
-        );
+    // Filtro por data (sempre aplicado, mas só usado para campos de data)
+    if (startDate) {
+      // Verifica se o campo atual é um campo de data
+      const isDateField = ["dataLancamento", "dataEntrega", "dataPicking"].includes(filterField);
 
-        // Se só temos a data inicial, checamos se a data do item é maior ou igual
-        if (startDate && !endDate) {
-          // Resetamos as horas para comparar apenas as datas
-          const startDateOnly = new Date(startDate);
-          startDateOnly.setHours(0, 0, 0, 0);
+      // Aplica filtro de data apenas para campos de data
+      if (isDateField) {
+        filtered = filtered.filter((item) => {
+          const itemDate = new Date(
+            item[filterField as keyof DataPedidos] as string
+          );
 
-          const itemDateOnly = new Date(itemDate);
-          itemDateOnly.setHours(0, 0, 0, 0);
+          // Se só temos a data inicial, checamos se a data do item é maior ou igual
+          if (startDate && !endDate) {
+            // Resetamos as horas para comparar apenas as datas
+            const startDateOnly = new Date(startDate);
+            startDateOnly.setHours(0, 0, 0, 0);
 
-          return itemDateOnly >= startDateOnly;
-        }
+            const itemDateOnly = new Date(itemDate);
+            itemDateOnly.setHours(0, 0, 0, 0);
 
-        // Se temos data inicial e final, checamos se está dentro do range
-        if (startDate && endDate) {
-          const startDateOnly = new Date(startDate);
-          startDateOnly.setHours(0, 0, 0, 0);
+            return itemDateOnly >= startDateOnly;
+          }
 
-          const endDateOnly = new Date(endDate);
-          endDateOnly.setHours(23, 59, 59, 999); // Final do dia
+          // Se temos data inicial e final, checamos se está dentro do range
+          if (startDate && endDate) {
+            const startDateOnly = new Date(startDate);
+            startDateOnly.setHours(0, 0, 0, 0);
 
-          const itemDateOnly = new Date(itemDate);
-          itemDateOnly.setHours(12, 0, 0, 0); // Meio-dia para evitar problemas de timezone
+            const endDateOnly = new Date(endDate);
+            endDateOnly.setHours(23, 59, 59, 999); // Final do dia
 
-          return itemDateOnly >= startDateOnly && itemDateOnly <= endDateOnly;
-        }
+            const itemDateOnly = new Date(itemDate);
+            itemDateOnly.setHours(12, 0, 0, 0); // Meio-dia para evitar problemas de timezone
 
-        return true;
-      });
+            return itemDateOnly >= startDateOnly && itemDateOnly <= endDateOnly;
+          }
+
+          return true;
+        });
+      }
     }
 
     setFilteredData(filtered);
@@ -604,31 +612,41 @@ export function Pedidos() {
     }
   }, [filterValue, filterField]);
 
+  // Verificar se o campo atual é um campo de data
+  const isDateField = ["dataLancamento", "dataEntrega", "dataPicking"].includes(filterField);
+
   return (
     <div className="w-full p-7">
       <h1 className="text-2xl font-bold">Pedidos</h1>
       <div className="flex flex-col space-y-4 py-4">
-        {/* Linha superior com input (70%) e select */}
+        {/* Linha superior com input, botão filtrar e select */}
         <div className="flex gap-4 items-end">
-          {/* Input de filtro (70%) */}
-          <div className="w-[70%]">
+          {/* Área de input e botão filtrar */}
+          <div className="w-[80%]">
             <Label htmlFor="searchField" className="mb-2 block">
               {filterLabels[filterField as keyof typeof filterLabels]}
             </Label>
-            <Input
-              id="searchField"
-              placeholder={
-                placeholders[filterField as keyof typeof placeholders]
-              }
-              value={filterValue}
-              onChange={(event) => setFilterValue(event.target.value)}
-              className="rounded w-full"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="searchField"
+                placeholder={
+                  placeholders[filterField as keyof typeof placeholders]
+                }
+                value={filterValue}
+                onChange={(event) => setFilterValue(event.target.value)}
+                className="rounded w-full"
+              />
+
+              {/* Botão filtrar ao lado do input */}
+              <Button onClick={applyFilters} className="px-8">
+                Buscar
+              </Button>
+            </div>
           </div>
 
-          {/* Select para escolher o tipo de filtro (ocupa o restante) */}
-          <div className="flex-1">
-            <Label htmlFor="filterFieldSelect" className="mb-2 block">
+          {/* Select para escolher o tipo de filtro */}
+          <div className="w-[20%]">
+            <Label htmlFor="filterFieldSelect" className="mb-2 block text-sm">
               Filtrar por
             </Label>
             <Select
@@ -636,8 +654,8 @@ export function Pedidos() {
               value={filterField}
               onValueChange={handleFilterFieldChange}
             >
-              <SelectTrigger id="filterFieldSelect" className="w-full">
-                <SelectValue placeholder="Selecione o campo para filtrar" />
+              <SelectTrigger id="filterFieldSelect" className="w-full text-sm">
+                <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="idPedido">Número do Pedido</SelectItem>
@@ -654,13 +672,11 @@ export function Pedidos() {
           </div>
         </div>
 
-        {/* Segunda linha com DateRangePicker (apenas visível para campos de data) e botão Limpar Filtros */}
+        {/* Segunda linha com DateRangePicker (apenas visível quando for campo de data) e botão Limpar Filtros */}
         <div className="flex gap-4 items-start justify-between">
-          {/* DateRangePicker à esquerda, só aparece para campos de data */}
+          {/* DateRangePicker à esquerda, agora condicional */}
           <div className="flex-1">
-            {["dataLancamento", "dataEntrega", "dataPicking"].includes(
-              filterField
-            ) ? (
+            {isDateField ? (
               <DateRangePicker
                 startDate={startDate}
                 endDate={endDate}
@@ -669,14 +685,12 @@ export function Pedidos() {
                 onFilter={applyFilters}
               />
             ) : (
-              <Button onClick={applyFilters} className="mt-5">
-                Filtrar
-              </Button>
+              <div className="h-10"></div> // Espaço vazio para manter o layout
             )}
           </div>
 
           {/* Botão limpar filtros à direita */}
-          <div className="flex items-end h-full mt-5">
+          <div className="flex items-end h-full">
             <Button variant="outline" onClick={clearFilters}>
               Limpar Filtros
             </Button>

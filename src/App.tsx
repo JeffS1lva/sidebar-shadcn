@@ -14,6 +14,8 @@ import {
 import { Home } from "./components/pages/Home";
 import { LoginForm } from "./components/login/LoginForm";
 import { Toaster } from "sonner"; // Importando Toaster para exibir notificações
+import { ThemeProvider } from "./components/Dark-Mode/ThemeProvider";
+import { ModeToggle } from "./components/Dark-Mode/ModeToggle";
 
 export function App() {
   const [authData, setAuthData] = useState<{
@@ -58,48 +60,53 @@ export function App() {
   }, []);
 
   return (
-    <Router>
-      <Routes>
-        {/* Rota pública do login */}
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/home" />
-            ) : (
-              <LoginForm onLoginSuccess={handleLoginSuccess} />
-            )
-          }
-        />
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <Router>
+        <Routes>
+          {/* Rota pública do login */}
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/home" />
+              ) : (
+                <LoginForm onLoginSuccess={handleLoginSuccess} />
+              )
+            }
+          />
 
-        {/* Rotas protegidas */}
-        <Route
-          path="/*"
-          element={
-            isAuthenticated ? (
-              <AuthenticatedLayout authData={authData} onLogout={handleLogout}>
-                <Routes>
-                  <Route path="/home" element={<Home />} />
-                  <Route path="/pedidos" element={<Pedidos />} />
-                  <Route path="/notas-fiscais" element={<Notes />} />
-                  <Route path="/boletos" element={<Boletos />} />
-                  {/* Redireciona para home se a rota não corresponder */}
-                  <Route path="*" element={<Navigate to="/home" />} />
-                </Routes>
-              </AuthenticatedLayout>
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
+          {/* Rotas protegidas */}
+          <Route
+            path="/*"
+            element={
+              isAuthenticated ? (
+                <AuthenticatedLayout
+                  authData={authData}
+                  onLogout={handleLogout}
+                >
+                  <Routes>
+                    <Route path="/home" element={<Home />} />
+                    <Route path="/pedidos" element={<Pedidos />} />
+                    <Route path="/notas-fiscais" element={<Notes />} />
+                    <Route path="/boletos" element={<Boletos />} />
+                    {/* Redireciona para home se a rota não corresponder */}
+                    <Route path="*" element={<Navigate to="/home" />} />
+                  </Routes>
+                </AuthenticatedLayout>
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
 
-        {/* Redireciona a rota raiz para login */}
-        <Route path="/" element={<Navigate to="/login" />} />
-      </Routes>
+          {/* Redireciona a rota raiz para login */}
+          <Route path="/" element={<Navigate to="/login" />} />
+        </Routes>
 
-      {/* Toaster para as notificações do Sonner */}
-      <Toaster />
-    </Router>
+        {/* Toaster para as notificações do Sonner */}
+        <Toaster />
+      </Router>
+    </ThemeProvider>
   );
 }
 
@@ -111,7 +118,12 @@ function AuthenticatedLayout({
 }: {
   children: React.ReactNode;
   onLogout: () => void;
-  authData: { login: string; email: string; firstName: string; lastName: string } | null;
+  authData: {
+    login: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  } | null;
 }) {
   const location = useLocation();
 
@@ -128,6 +140,7 @@ function AuthenticatedLayout({
       <NavegationMenu onLogout={onLogout} authData={authData} />
       <main className="w-full h-full">
         <SidebarTrigger />
+        <ModeToggle />
         {children}
       </main>
     </SidebarProvider>

@@ -131,16 +131,19 @@ export function NavegationMenu({
               <SidebarMenuItem>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <SidebarMenuButton title="Usuário" className="cursor-pointer">
+                    <SidebarMenuButton
+                      title="Usuário"
+                      className="cursor-pointer"
+                    >
                       <User2 /> {userLogin || "Usuário Desconhecido"}
                       <ChevronUp className="ml-auto" />
                     </SidebarMenuButton>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     side="left"
-                    className="w-56 flex flex-col text-white gap-2 bg-gray-500 border-1 border-gray-500 rounded-sm mb-3 px-1 py-1 cursor-pointer ml-3"
+                    className="w-56 flex flex-col text-black gap-2 bg-gray-100 border-1 border-gray-500 rounded-sm mb-3 px-1 py-1 cursor-pointer ml-4"
                   >
-                    <DropdownMenuItem className="flex items-center gap-2 pl-2 pt-1 outline-0 hover:bg-zinc-600 hover:rounded-md py-0.5">
+                    <DropdownMenuItem className="flex items-center gap-2 pl-2 pt-1 outline-0 hover:bg-zinc-200 hover:rounded-md py-0.5">
                       <Avatar className="size-9">
                         {avatarUrl ? (
                           <AvatarImage
@@ -150,25 +153,27 @@ export function NavegationMenu({
                           />
                         ) : (
                           <AvatarFallback>
-                            <User2 className="text-white size-9" />
+                            <User2 className="text-black size-9" />
                           </AvatarFallback>
                         )}
                       </Avatar>
                       <div className="flex flex-col">
                         <span>{userLogin || "Usuário Desconhecido"}</span>
-                        <span className="text-sm text-zinc-300">{userEmail}</span>
+                        <span className="text-sm text-zinc-500">
+                          {userEmail}
+                        </span>
                       </div>
                     </DropdownMenuItem>
-                    <div className="border w-full border-zinc-600"></div>
+                    <div className="border w-full border-zinc-300"></div>
                     <DropdownMenuItem
-                      className="flex items-center gap-2 pl-3 outline-0 hover:bg-zinc-600 hover:rounded-md py-2"
+                      className="flex items-center gap-2 pl-3 outline-0 hover:bg-zinc-200 hover:rounded-md py-2"
                       onClick={handlePasswordReset}
                     >
                       <Settings size={16} />
                       Alterar senha
                     </DropdownMenuItem>
-                    <div className="border w-full border-zinc-600"></div>
-                    <DropdownMenuItem className="flex items-center pt-1 gap-2 pb-1 outline-0 hover:bg-zinc-600 hover:rounded-md py-0.5">
+                    <div className="border w-full border-zinc-300"></div>
+                    <DropdownMenuItem className="flex items-center pt-1 gap-2 pb-1 outline-0 hover:bg-zinc-200 hover:rounded-md py-0.5">
                       <Button variant={"logout"} onClick={handleLogout}>
                         <LogOut size={15} />
                         Sair

@@ -34,7 +34,7 @@
   --sidebar-foreground: oklch(0.13 0.028 261.692);
   --sidebar-primary: oklch(0.21 0.034 264.665);
   --sidebar-primary-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-accent: oklch(0.87 0.00 0);
+  --sidebar-accent: oklch(0.87 0 0);
   --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
   --sidebar-border: oklch(0.928 0.006 264.531);
   --sidebar-ring: oklch(0.872 0.01 258.338);
@@ -114,12 +114,11 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-@layer base { 
+@layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
   }
-
 }

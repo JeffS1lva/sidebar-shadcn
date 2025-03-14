@@ -82,7 +82,7 @@ const chartConfig: ChartConfig = {
 
 export function Home() {
   return (
-    <div className="p-10 flex justify-between h-full gap-5 w-full">
+    <div className="p-10 flex justify-between h-full gap-5 w-full ">
       {/* Gráfico de Compras (Bar Chart) */}
       <Card>
         <CardHeader>
