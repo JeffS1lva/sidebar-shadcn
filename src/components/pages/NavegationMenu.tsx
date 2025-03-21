@@ -20,7 +20,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import Logo from "../../assets/logo.png";
+import LogoDark from "@/assets/logo.png";
+import LogoLight from "@/assets/logoBranco.png"; // Assumindo que existe essa versão clara do logo
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -31,6 +32,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Button } from "../ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ResetPassword } from "../login/ResetPassword";
+
+// Componente de logo que muda com o tema
+const ThemeAwareLogo = () => {
+  return (
+    <>
+      {/* Logo para tema claro - escondido no tema escuro */}
+      <img
+        src={LogoDark}
+        alt="logo polar fix"
+        className="pr-24 dark:hidden"
+      />
+      {/* Logo para tema escuro - escondido no tema claro */}
+      <img
+        src={LogoLight}
+        alt="logo polar fix"
+        className="pr-24 hidden dark:block"
+      />
+    </>
+  );
+};
 
 const items = [
   {
@@ -109,7 +130,7 @@ export function NavegationMenu({
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel>
-              <img src={Logo} alt="logo polar fix" className="pr-24" />
+              <ThemeAwareLogo />
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>

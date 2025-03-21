@@ -11,7 +11,29 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ModeToggle } from "../Dark-Mode/ModeToggle";
+import LogoDark from "@/assets/logo.png"; // Logo para tema claro
+import LogoLight from "@/assets/logoBranco.png"; // Logo para tema escuro
 import axios from "axios";
+
+// Componente de logo que muda com o tema
+const ThemeAwareLogo = () => {
+  return (
+    <div className="relative flex justify-center">
+      {/* Logo para tema claro - escondido no tema escuro */}
+      <img
+        src={LogoDark}
+        alt="logo-login"
+        className="max-w-72 dark:hidden"
+      />
+      {/* Logo para tema escuro - escondido no tema claro */}
+      <img
+        src={LogoLight}
+        alt="logo-login"
+        className="max-w-72 hidden dark:block"
+      />
+    </div>
+  );
+};
 
 interface LoginFormProps {
   className?: string;
@@ -32,11 +54,9 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showTooltip, setShowTooltip] = useState(true); // Iniciar como true para mostrar sempre
+  const [showTooltip, setShowTooltip] = useState(true);
   const modeToggleRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
-  // Removido o useEffect que controlava a exibição automática
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,10 +65,10 @@ export function LoginForm({
 
     try {
       const response = await axios.post(
-        "/api/Auth/login", // Agora usa o proxy configurado
+        "/api/Auth/login",
         { email, password },
-        { 
-          headers: { "Content-Type": "application/json" }
+        {
+          headers: { "Content-Type": "application/json" },
         }
       );
 
@@ -104,9 +124,12 @@ export function LoginForm({
       </div>
 
       <div
-        className="flex flex-col gap-6 w-auto px-8 sm:px-16 lg:px-96 py-20"
+        className="flex flex-col gap-6 w-auto px-8 sm:px-16 lg:px-96 py-10"
         {...props}
       >
+        <div className="flex justify-center mt-7">
+          <ThemeAwareLogo />
+        </div>
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Login</CardTitle>
