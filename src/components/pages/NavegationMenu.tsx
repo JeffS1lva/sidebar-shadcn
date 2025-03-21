@@ -29,7 +29,7 @@ import {
 } from "@radix-ui/react-dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Button } from "../ui/button";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ResetPassword } from "../login/ResetPassword";
 
 const items = [
@@ -116,10 +116,11 @@ export function NavegationMenu({
                 {items.map((item) => (
                   <SidebarMenuItem key={item.title} title={item.title}>
                     <SidebarMenuButton asChild>
-                      <a href={item.url}>
+                      {/* Substituir a tag <a> pelo componente Link do React Router */}
+                      <Link to={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -174,7 +175,7 @@ export function NavegationMenu({
                     </DropdownMenuItem>
                     <div className="border w-full border-zinc-300"></div>
                     <DropdownMenuItem className="flex items-center pt-1 gap-2 pb-1 outline-0 hover:bg-zinc-200 hover:rounded-md py-0.5">
-                      <Button variant={"logout"} onClick={handleLogout}>
+                      <Button variant={"bottomSide"} onClick={handleLogout}>
                         <LogOut size={15} />
                         Sair
                       </Button>
