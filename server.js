@@ -1,16 +1,24 @@
-const express = require('express');
-const path = require('path');
+// server.js
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import cors from 'cors';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+app.use(cors());
 
-// Serve static files from the React build directory
-app.use(express.static(path.join(__dirname, 'build')));
+// Serve static files from the dist directory
+app.use(express.static(path.join(__dirname, 'dist')));
 
-// Serve the index.html for any request not found in static files
+// Handle SPA routing by sending all requests to index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

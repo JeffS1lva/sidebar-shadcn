@@ -221,7 +221,7 @@ export const Pedidos: React.FC = () => {
         setError(null);
       } catch (err: any) {
         console.error("Erro ao buscar pedidos:", err);
-        setError("Erro ao carregar os pedidos. Tente novamente.");
+        setError("Faça login novamente, seu tempo expirou.");
       } finally {
         setLoading(false);
       }
