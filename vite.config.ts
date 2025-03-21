@@ -37,7 +37,7 @@ export default defineConfig({
           });
 
           // Log proxy errors
-          proxy.on('error', function(err, req, res) {
+          proxy.on('error', function(err, _req, res) {
             console.error('Proxy error:', err);
             res.writeHead(500, {
               'Content-Type': 'text/plain'
