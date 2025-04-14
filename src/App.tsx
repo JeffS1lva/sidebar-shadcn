@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { NavegationMenu } from "@/components/pages/NavegationMenu";
 import { Boletos } from "./components/pages/Boletos";
-import { Notes } from "./components/pages/Notes";
+import { Cotacao } from "./components/pages/Cotacao";
 import { Pedidos } from "./components/pages/Pedidos";
 import {
   BrowserRouter as Router,
@@ -10,6 +10,7 @@ import {
   Routes,
   Navigate,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 import { Home } from "./components/pages/Home";
 import { LoginForm } from "./components/login/LoginForm";
@@ -60,7 +61,7 @@ export function App() {
   }, []);
 
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <Router>
         <Routes>
           {/* Rota pública do login */}
@@ -87,7 +88,7 @@ export function App() {
                   <Routes>
                     <Route path="/home" element={<Home />} />
                     <Route path="/pedidos" element={<Pedidos />} />
-                    <Route path="/notas-fiscais" element={<Notes />} />
+                    <Route path="/cotacao" element={<Cotacao />} />
                     <Route path="/boletos" element={<Boletos />} />
                     {/* Redireciona para home se a rota não corresponder */}
                     <Route path="*" element={<Navigate to="/home" />} />
@@ -111,6 +112,8 @@ export function App() {
 }
 
 // Componente para o layout após autenticação
+// In App.tsx, modify the AuthenticatedLayout component
+
 function AuthenticatedLayout({
   children,
   onLogout,
@@ -126,18 +129,32 @@ function AuthenticatedLayout({
   } | null;
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Verifica a autenticação ao mudar de rota
+    // Check if token exists and is not expired
+    const token = localStorage.getItem("token");
     const isAuth = localStorage.getItem("isAuthenticated") === "true";
-    if (!isAuth) {
+    
+    // If no token or no auth data, logout
+    if (!token || !isAuth) {
       onLogout();
+      navigate("/login");
     }
-  }, [location.pathname, onLogout]);
+    
+    // You could also add token validation logic here if your token contains expiration info
+  }, [location.pathname, onLogout, navigate]);
 
   return (
     <SidebarProvider>
-      <NavegationMenu onLogout={onLogout} authData={authData} />
+      <NavegationMenu
+        onLogout={() => {
+          onLogout();
+          localStorage.removeItem("token");
+          navigate("/login");
+        }}
+        authData={authData}
+      />
       <main className="w-full h-full">
         <SidebarTrigger />
         <ModeToggle />

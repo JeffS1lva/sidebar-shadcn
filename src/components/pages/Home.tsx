@@ -22,7 +22,7 @@ import Coletor from "@/assets/BannerColetor.jpg";
 import Curativos from "@/assets/BannerCurativos.jpg";
 import Esterilizacao from "@/assets/BannerEsterilização.jpg";
 import Clorexidina from "@/assets/BannerClorexidina.jpg";
-import { Instagram, Linkedin, Mail, Phone, Youtube } from "lucide-react";
+import { Copy, Instagram, Linkedin, Mail, Phone, Youtube } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 
 export function Home() {
@@ -93,7 +93,7 @@ export function Home() {
         </CarouselContent>
 
         {/* Container personalizado para o layout dos controles */}
-        <div className="flex mt-4 w-full">
+        <div className="flex w-full">
           <div className="flex gap-3 ">
             <div className="flex absolute gap-2">
               <div className="relative ">
@@ -125,28 +125,38 @@ export function Home() {
       <div className="flex justify-between items-center gap-2 py-2">
         <div className="flex gap-2">
           <div className="flex items-center gap-1 bg-zinc-300 shadow-sm shadow-black px-2 rounded-sm p-1">
-            <Mail size={18} />
+            <Mail size={18} className="dark:text-black" />
 
             <a
               href="mailto:vendas@polarfix.com.br?subject=Contato%20via%20site&body=Olá%20equipe%20PolarFix"
-              className="text-sm "
+              className="text-sm dark:text-black "
             >
               vendas@polarfix.com.br
             </a>
           </div>
           <div className="border border-zinc-300" />
           <div className="flex items-center gap-3 bg-zinc-300 shadow-sm shadow-black px-2 rounded-sm p-1">
-            <Phone size={18} />
+            <Phone size={18} className="dark:text-black" />
 
             <Select>
               <SelectTrigger className="w-[180px]" variant="secondary">
-                <SelectValue placeholder="Selecione Contato"/>
+                <SelectValue placeholder="Selecione Contato" />
               </SelectTrigger>
               <SelectContent variant="secondary">
-                <SelectGroup >
+                <SelectGroup>
                   <SelectLabel>Contato</SelectLabel>
-                  <SelectItem title="Comercial" value="Comercial">11 4512-8600</SelectItem>
-                  <SelectItem title="Sac" value="Sac">0800 191099</SelectItem>
+                  <div className="flex items-center gap-2 ">
+                    <SelectItem title="Comercial" value="Comercial">
+                      11 4512-8600{" "}
+                    </SelectItem>
+                    <Copy size={18} className="cursor-pointer " />
+                  </div>
+                  <div className="flex items-center gap-2 ">
+                    <SelectItem title="Sac" value="Sac">
+                      0800 191099
+                    </SelectItem>
+                    <Copy size={18} className="cursor-pointer " />
+                  </div>
                 </SelectGroup>
               </SelectContent>
             </Select>

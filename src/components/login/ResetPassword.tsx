@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,25 +15,96 @@ import { toast } from "sonner";
 
 interface ResetPasswordProps {
   closeModal: () => void;
+  userEmail?: string; // Email do usuário atual
 }
 
-export function ResetPassword({ closeModal }: ResetPasswordProps) {
+export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps) {
+  const [currentPassword, setCurrentPassword] = useState<string>("");
   const [newPassword, setNewPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [email, setEmail] = useState<string>(userEmail || "");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [apiResponse, setApiResponse] = useState<string>(""); // Para debugar a resposta da API
 
-  const handleSaveChanges = () => {
-    if (newPassword === confirmPassword && newPassword.length === 8) {
-      closeModal();
-      toast.success("Sua senha foi alterada com sucesso!", {
+  // Atualiza o estado do email se a prop mudar
+  useEffect(() => {
+    if (userEmail) {
+      setEmail(userEmail);
+    }
+  }, [userEmail]);
+
+  const handleSaveChanges = async () => {
+    // Verifica se todos os campos obrigatórios estão preenchidos
+    if (!email || !currentPassword || !newPassword) {
+      toast.error("Email, senha atual e nova senha são obrigatórios.", {
         style: {
           backgroundColor: "white",
-          color: "green",
+          color: "red",
           boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
         },
       });
+      return;
+    }
+    
+    if (newPassword === confirmPassword && newPassword.length === 8) {
+      try {
+        setIsLoading(true);
+        
+        // Definindo o payload de acordo com o formato esperado pela API
+        const payload = {
+          currentPassword,
+          newPassword,
+          email
+        };
+        
+        // Log para debug
+        console.log("Enviando requisição:", payload);
+        
+        const response = await fetch('/api/internal/Auth/change-password', { // Removido 'internal' do caminho
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+          credentials: 'include'
+        });
 
-      setNewPassword("");
-      setConfirmPassword("");
+        // Armazena a resposta para debug
+        const responseData = await response.text();
+        setApiResponse(responseData);
+        console.log("Resposta da API:", response.status, responseData);
+
+        if (!response.ok) {
+          throw new Error(`Falha ao alterar a senha: ${response.status} - ${responseData}`);
+        }
+
+        closeModal();
+        toast.success("Sua senha foi alterada com sucesso!", {
+          style: {
+            backgroundColor: "white",
+            color: "green",
+            boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
+          },
+        });
+
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } catch (error) {
+        console.error("Erro ao redefinir senha:", error);
+        
+        // Mensagem de erro mais informativa
+        toast.error(`Erro ao redefinir a senha: ${error instanceof Error ? error.message : 'Tente novamente mais tarde.'}`, {
+          style: {
+            backgroundColor: "white",
+            color: "red",
+            boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
+          },
+          duration: 5000, // Aumenta a duração para facilitar a leitura
+        });
+      } finally {
+        setIsLoading(false);
+      }
     } else if (newPassword !== confirmPassword) {
       toast.error("As senhas não coincidem. Tente novamente.", {
         style: {
@@ -48,17 +119,26 @@ export function ResetPassword({ closeModal }: ResetPasswordProps) {
   const isPasswordValid = newPassword.length === 8;
   const isPasswordMismatch = newPassword !== confirmPassword;
   const isButtonDisabled = 
+    !email ||
+    currentPassword.length === 0 ||
     newPassword.length !== 8 ||
     confirmPassword.length !== 8 ||
-    newPassword !== confirmPassword;
+    newPassword !== confirmPassword ||
+    isLoading;
 
   // Determina o texto do botão com base no estado
-  const buttonText = isButtonDisabled ? "Bloqueado" : "Salvar Alterações";
+  const buttonText = isLoading ? "Processando..." : isButtonDisabled ? "Bloqueado" : "Salvar Alterações";
   
   // Determina a mensagem de título para o botão
   const getButtonTitle = () => {
-    if (newPassword.length === 0 || confirmPassword.length === 0) {
-      return "Preencha ambos os campos de senha";
+    if (isLoading) {
+      return "Processando sua solicitação";
+    } else if (!email) {
+      return "Informe seu email";
+    } else if (currentPassword.length === 0) {
+      return "Preencha sua senha atual";
+    } else if (newPassword.length === 0 || confirmPassword.length === 0) {
+      return "Preencha todos os campos de senha";
     } else if (newPassword.length !== 8) {
       return "A senha deve ter exatamente 8 caracteres";
     } else if (isPasswordMismatch) {
@@ -83,6 +163,34 @@ export function ResetPassword({ closeModal }: ResetPasswordProps) {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="email" className="text-right">
+              Email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              className="col-span-3"
+              placeholder="Digite seu email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading || !!userEmail} // Desabilita se o email foi fornecido via props
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="current-password" className="text-right">
+              Senha Atual
+            </Label>
+            <Input
+              id="current-password"
+              type="password"
+              className="col-span-3"
+              placeholder="Digite sua senha atual"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="new-password" className="text-right">
               Nova Senha
             </Label>
@@ -94,6 +202,7 @@ export function ResetPassword({ closeModal }: ResetPasswordProps) {
               value={newPassword}
               maxLength={8}
               onChange={(e) => setNewPassword(e.target.value)}
+              disabled={isLoading}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -108,6 +217,7 @@ export function ResetPassword({ closeModal }: ResetPasswordProps) {
               value={confirmPassword}
               maxLength={8}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={isLoading}
             />
           </div>
         </div>
@@ -131,8 +241,18 @@ export function ResetPassword({ closeModal }: ResetPasswordProps) {
           </div>
         )}
 
+        {apiResponse && (
+          <div className="mt-2 text-sm text-gray-600 bg-gray-100 p-2 rounded overflow-auto max-h-24">
+            <strong>Resposta API (debug):</strong> {apiResponse}
+          </div>
+        )}
+
         <DialogFooter>
-          <Button type="button" onClick={closeModal}>
+          <Button 
+            type="button" 
+            onClick={closeModal}
+            disabled={isLoading}
+          >
             Cancelar
           </Button>
           <Button

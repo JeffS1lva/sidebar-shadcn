@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-  ScrollText,
   Home,
   ShoppingBag,
   ScanBarcode,
@@ -8,6 +7,7 @@ import {
   ChevronUp,
   User2,
   LogOut,
+  Landmark,
 } from "lucide-react";
 import {
   Sidebar,
@@ -38,11 +38,7 @@ const ThemeAwareLogo = () => {
   return (
     <>
       {/* Logo para tema claro - escondido no tema escuro */}
-      <img
-        src={LogoDark}
-        alt="logo polar fix"
-        className="pr-24 dark:hidden"
-      />
+      <img src={LogoDark} alt="logo polar fix" className="pr-24 dark:hidden" />
       {/* Logo para tema escuro - escondido no tema claro */}
       <img
         src={LogoLight}
@@ -60,14 +56,14 @@ const items = [
     icon: Home,
   },
   {
+    title: "Cotações",
+    url: "/cotacao",
+    icon: Landmark,
+  },
+  {
     title: "Pedidos",
     url: "/pedidos",
     icon: ShoppingBag,
-  },
-  {
-    title: "Notas Fiscais",
-    url: "/notas-fiscais",
-    icon: ScrollText,
   },
   {
     title: "Boletos",
@@ -93,6 +89,7 @@ export function NavegationMenu({
   const [userEmail, setUserEmail] = useState("users@test.com");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isResetPasswordOpen, setResetPasswordOpen] = useState(false); // Estado para controle do modal
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // Estado para controlar o processo de logout
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -109,10 +106,37 @@ export function NavegationMenu({
     }
   }, [authData]);
 
-  const handleLogout = () => {
-    if (onLogout) {
-      onLogout();
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      
+      // Chamada à API de logout
+      const response = await fetch('/api/internal/Auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Se precisar enviar algum dado no corpo da requisição, adicione aqui
+        // body: JSON.stringify({ ... }),
+        credentials: 'include', // Para incluir cookies na requisição, se necessário
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao fazer logout');
+      }
+
+      // Chama o callback de logout que foi passado como props
+      if (onLogout) {
+        onLogout();
+      }
+      
+      // Redireciona para a página de login
       navigate("/login");
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Opcionalmente, você pode adicionar alguma notificação para o usuário
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -195,10 +219,14 @@ export function NavegationMenu({
                       Alterar senha
                     </DropdownMenuItem>
                     <div className="border w-full border-zinc-300"></div>
-                    <DropdownMenuItem className="flex items-center pt-1 gap-2 pb-1 outline-0 hover:bg-zinc-200 hover:rounded-md py-0.5">
-                      <Button variant={"bottomSide"} onClick={handleLogout}>
+                    <DropdownMenuItem className="flex items-center pt-1 gap-2 pb-1 outline-0 hover:bg-zinc-200 hover:rounded-md py-0.5" >
+                      <Button 
+                        variant={"bottomSide"} 
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
+                      >
                         <LogOut size={15} />
-                        Sair
+                        {isLoggingOut ? "Saindo..." : "Sair"}
                       </Button>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
