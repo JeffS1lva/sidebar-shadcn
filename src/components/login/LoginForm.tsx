@@ -295,9 +295,9 @@ export function LoginForm({
           token,
         });
 
-        navigate("/home");
+        navigate("/inicio");
       } else {
-        throw new Error("Resposta da API inválida");
+        throw new Error();
       }
     } catch (error: any) {
       console.error("Erro completo:", {
@@ -306,7 +306,7 @@ export function LoginForm({
         response: error.response?.data,
       });
 
-      let errorMessage = "Falha no login, primeiro acesso aguardar e-mail";
+      let errorMessage = "Falha no login, tente novamente";
 
       if (error.response) {
         // Erros 4xx/5xx
@@ -344,7 +344,7 @@ export function LoginForm({
 
     try {
       const response = await axios.post(
-        "/api/internal/Auth/reset-password",
+        "/api/external/Auth/reset-password",
         { email },
         {
           headers: { "Content-Type": "application/json" },
@@ -445,7 +445,7 @@ export function LoginForm({
       </div>
 
       <div
-        className={`flex flex-col gap-6 w-auto px-8 sm:px-16 lg:px-96 py-10 ${
+        className={`flex flex-col gap-6 w-auto px-8 sm:px-16 lg:px-96 py-10  ${
           loading ? "opacity-70 pointer-events-none" : ""
         }`}
         {...props}
@@ -580,7 +580,7 @@ export function LoginForm({
                           onChange={(e) => setPassword(e.target.value)}
                           id="password"
                           type="password"
-                          placeholder="digite sua senha.."
+                          placeholder="Digite sua senha.."
                           required
                           disabled={loading}
                         />
@@ -602,7 +602,7 @@ export function LoginForm({
                             <>
                               <span className="opacity-0">Login</span>
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white dark:border-black"></div>
                               </div>
                             </>
                           ) : (

@@ -60,7 +60,7 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
         // Log para debug
         console.log("Enviando requisição:", payload);
         
-        const response = await fetch('/api/internal/Auth/change-password', { // Removido 'internal' do caminho
+        const response = await fetch('/api/external/Auth/change-password', { // Removido 'internal' do caminho
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

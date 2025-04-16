@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Paginacao } from "./Pedidos/Paginacao";
+import { Paginacao } from "./Paginacao";
 import { Circle, Eye, Package, PackageOpen, PackageSearch } from "lucide-react";
 import { format, subDays, subMonths, subYears } from "date-fns"; // Adicionado subMonths
 import { PedidosFilter } from "./Pedidos/PedidosFilter";
@@ -32,6 +32,7 @@ import { jwtDecode } from "jwt-decode";
 import { toast } from "sonner";
 
 interface Pedido {
+  status: any;
   grupo: string;
   filial: string;
   codigoTransportadora: string;
@@ -39,13 +40,13 @@ interface Pedido {
   estado: string;
   codigoDoCliente: string;
   nomeCliente: string;
-  numeroPedido: number;
+  numeroPedido: string;
   dataLancamentoPedido: string;
   dataParaEntrega: string;
   statusDoPedido: string;
   dataPicking: string;
   statusPicking: string;
-  notaFiscal: number;
+  notaFiscal: string;
   chaveNFe: string;
 }
 
@@ -55,7 +56,13 @@ interface TokenDecoded {
 }
 
 // Atualizado para incluir opção de "ultimoMes"
-type PeriodFilter = "todos" | "ultimoAno" | "ultimoMes" | "ultimos90Dias";
+type PeriodFilter = "ultimoMes" | "ultimos90Dias" | "ultimoAno" | "todos";
+type SearchType =
+  | "numeroPedido"
+  | "statusDoPedido"
+  | "notaFiscal"
+  | "dataLancamentoPedido"
+  | "dataParaEntrega";
 
 const numericFilter: FilterFn<Pedido> = (row, columnId, filterValue) => {
   const value = row.getValue(columnId);
@@ -88,18 +95,11 @@ export const Pedidos: React.FC = () => {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-  const [searchType, setSearchType] = React.useState<
-    | "numeroPedido"
-    | "statusDoPedido"
-    | "notaFiscal"
-    | "dataLancamentoPedido"
-    | "dataParaEntrega"
-  >("numeroPedido");
+  const [searchType, setSearchType] =
+    React.useState<SearchType>("numeroPedido");
   const [searchValue, setSearchValue] = React.useState<string>("");
-  // Estado para o filtro de período atual (modificado para começar com ultimoMes)
   const [currentPeriodFilter, setCurrentPeriodFilter] =
     React.useState<PeriodFilter>("ultimoMes");
-  // Estados para registro das datas de filtro atual
   const [activeDateRange, setActiveDateRange] = React.useState<{
     start: Date | undefined;
     end: Date | undefined;
@@ -183,7 +183,7 @@ export const Pedidos: React.FC = () => {
             loadingEl.className =
               "fixed inset-0 bg-black/50 flex items-center justify-center z-50";
             loadingEl.innerHTML = `
-              <div class="bg-white rounded-md p-4 flex flex-col items-center">
+              <div class="dark:bg-gray-900 dark:text-white bg-white rounded-md p-4 flex flex-col items-center">
                 <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-2"></div>
                 <p>Carregando Pedido de Venda ${pedidoId}...</p>
               </div>
@@ -217,20 +217,20 @@ export const Pedidos: React.FC = () => {
               "fixed inset-0 bg-black/75 flex flex-col items-center justify-center z-50";
 
             viewerContainer.innerHTML = `
-              <div class="bg-white rounded-md w-4/5 h-4/5 flex flex-col overflow-hidden">
-                <div class="flex justify-between items-center p-3 border-b">
+              <div class="dark:bg-gray-900 bg-white  rounded-md w-4/5 h-4/5 flex flex-col overflow-hidden">
+                <div class="flex justify-between items-center p-3 border-b border-gray-700">
                   <h3 class="font-medium">Pedido de Venda #${pedidoId}</h3>
                   <div class="flex gap-2">
                     <a href="${fileUrl}" download="pedido-${pedidoId}.pdf" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                       Download
                     </a>
-                    <button id="close-viewer-${pedidoId}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3">
+                    <button id="close-viewer-${pedidoId}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 dark:bg-gray-700 dark:hover:bg-gray-600">
                       Fechar
                     </button>
                   </div>
                 </div>
-                <div class="flex-1 overflow-hidden">
+                <div class="flex-1 overflow-hidden dark:bg-gray-900">
                   <iframe 
                     src="${fileUrl}" 
                     type="application/pdf" 
@@ -295,7 +295,7 @@ export const Pedidos: React.FC = () => {
                 }
                 onClick={handleViewPedido}
                 disabled={!hasNotaFiscal}
-                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 ${
+                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 cursor-pointer ${
                   !hasNotaFiscal ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
@@ -502,7 +502,7 @@ export const Pedidos: React.FC = () => {
             loadingEl.className =
               "fixed inset-0 bg-black/50 flex items-center justify-center z-50";
             loadingEl.innerHTML = `
-              <div class="bg-white rounded-md p-4 flex flex-col items-center">
+              <div class="dark:bg-gray-800 dark:text-white bg-white rounded-md p-4 flex flex-col items-center">
                 <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-2"></div>
                 <p>Carregando DANFE ${notaId}...</p>
               </div>
@@ -538,20 +538,20 @@ export const Pedidos: React.FC = () => {
               "fixed inset-0 bg-black/75 flex flex-col items-center justify-center z-50";
 
             viewerContainer.innerHTML = `
-              <div class="bg-white rounded-md w-4/5 h-4/5 flex flex-col overflow-hidden">
-                <div class="flex justify-between items-center p-3 border-b">
+              <div class="dark:bg-gray-900 dark:text-white bg-white rounded-md w-4/5 h-4/5 flex flex-col overflow-hidden">
+                <div class="flex justify-between items-center p-3 border-b ">
                   <h3 class="font-medium">DANFE - Nota Fiscal #${notaId}</h3>
                   <div class="flex gap-2">
-                    <a href="${fileUrl}" download="danfe-${notaId}.pdf" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">
+                    <a href="${fileUrl}" download="danfe-${notaId}.pdf" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 dark:text-black">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                       Download
                     </a>
-                    <button id="close-viewer-${notaId}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3">
+                    <button id="close-viewer-${notaId}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 dark:hover:bg-gray-600 dark:bg-gray-700 ">
                       Fechar
                     </button>
                   </div>
                 </div>
-                <div class="flex-1 overflow-hidden">
+                <div class="flex-1 overflow-hidden dark:bg-gray-900">
                   <iframe 
                     src="${fileUrl}" 
                     type="application/pdf" 
@@ -605,9 +605,9 @@ export const Pedidos: React.FC = () => {
         };
 
         return (
-          <div className="flex items-center ">
+          <div className="flex items-center gap-1 ">
             <span className="block  text-center font-medium min-w-[50px]">
-              {hasNotaFiscal ? notaFiscal.toString() : "N/A"}
+              {hasNotaFiscal ? notaFiscal.toString() : "-"}
             </span>
             <div className="flex gap-1">
               <button
@@ -616,7 +616,7 @@ export const Pedidos: React.FC = () => {
                 }
                 onClick={handleViewDANFE}
                 disabled={!hasNotaFiscal}
-                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 ${
+                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 cursor-pointer ${
                   !hasNotaFiscal ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
@@ -628,7 +628,7 @@ export const Pedidos: React.FC = () => {
                 title={hasNotaFiscal ? "Baixar XML" : "XML não disponível"}
                 onClick={handleDownloadXML}
                 disabled={!hasNotaFiscal}
-                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 ${
+                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 cursor-pointer ${
                   !hasNotaFiscal ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
@@ -655,15 +655,6 @@ export const Pedidos: React.FC = () => {
     },
     // Adicione esta nova coluna ao array de colunas (columns) depois da coluna "notaFiscal"
     {
-      accessorKey: "nomeTransportadora",
-      header: "Nome Transp.",
-      cell: ({ row }) => row.getValue("nomeTransportadora") ?? "-",
-    },
-    {
-      accessorKey: "estado",
-      header: "Estado",
-    },
-    {
       accessorKey: "nomeCliente",
       header: "Cliente",
       cell: ({ row }) => (
@@ -674,6 +665,16 @@ export const Pedidos: React.FC = () => {
           {row.getValue("nomeCliente")}
         </div>
       ),
+    },
+    {
+      accessorKey: "estado",
+      header: "Estado",
+    },
+
+    {
+      accessorKey: "nomeTransportadora",
+      header: "Nome Transp.",
+      cell: ({ row }) => row.getValue("nomeTransportadora") ?? "-",
     },
   ];
 
@@ -702,36 +703,26 @@ export const Pedidos: React.FC = () => {
   });
 
   // Função para fazer a requisição à API com intervalo de datas
+  // Função para buscar pedidos com intervalo de datas
   const fetchPedidosWithDateRange = async (startDate: Date, endDate: Date) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
 
       if (!token) {
-        localStorage.removeItem("token");
         navigate("/login");
         return;
       }
-
-      if (isTokenExpired(token)) {
-        localStorage.removeItem("token");
-        navigate("/login");
-        return;
-      }
-
-      // Formatação das datas para a API
-      const formatarDataAPI = (data: Date) => {
-        return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}-${String(data.getDate()).padStart(2, "0")}`;
-      };
 
       // Guardar as datas atuais de filtro
       setActiveDateRange({
         start: startDate,
         end: endDate,
       });
+
+      const formatarDataAPI = (date: Date) => {
+        return format(date, "yyyy-MM-dd");
+      };
 
       const response = await axios.get(
         "/api/external/Pedidos/consultar-pedidos",
@@ -815,9 +806,9 @@ export const Pedidos: React.FC = () => {
 
     switch (periodFilter) {
       case "todos":
-        // Buscar todos os pedidos dos últimos 3 anos
-        const tresAnosAtras = subYears(hoje, 3);
-        fetchPedidosWithDateRange(tresAnosAtras, hoje);
+        // Buscar todos os pedidos dos últimos 2 anos
+        const doisAnosAtras = subYears(hoje, 2);
+        fetchPedidosWithDateRange(doisAnosAtras, hoje);
         break;
       case "ultimoAno":
         // Buscar apenas os pedidos do último ano
@@ -837,10 +828,11 @@ export const Pedidos: React.FC = () => {
     }
   };
 
+
   // Na primeira renderização, busca os dados do último mês (modificado de 90 dias para 1 mês)
   React.useEffect(() => {
     applyPeriodFilter("ultimoMes");
-  }, [navigate]);
+  }, []);
 
   // Efeito para aplicar filtros de texto (número de pedido, status, nota fiscal)
   React.useEffect(() => {
@@ -853,46 +845,8 @@ export const Pedidos: React.FC = () => {
   }, [searchValue, searchType, table]);
 
   // Handler para mudança no filtro de período
-  const handlePeriodFilterChange = (value: PeriodFilter) => {
-    applyPeriodFilter(value);
-  };
 
   // Handler para filtros de data (quando o usuário seleciona manualmente no calendário)
-  const handleDateChange = (
-    startDate: Date | undefined,
-    endDate: Date | undefined,
-    columnId: string
-  ) => {
-    if (!startDate || !endDate) {
-      // Se as datas foram limpas, retorna para o filtro padrão de 1 mês (modificado de 90 dias para 1 mês)
-      applyPeriodFilter("ultimoMes");
-      return;
-    }
-
-    // Quando o usuário seleciona datas manualmente, aplicamos apenas o filtro de tabela
-    // sem fazer nova requisição à API (usamos os dados já carregados em allPedidos)
-    const column = table.getColumn(columnId);
-    if (column) {
-      column.setFilterValue({
-        start: format(startDate, "yyyy-MM-dd"),
-        end: format(endDate, "yyyy-MM-dd"),
-      });
-    }
-
-    // Se a data escolhida estiver fora do intervalo já carregado, fazemos uma nova requisição
-    if (activeDateRange.start && activeDateRange.end) {
-      const dataInicioAtual = activeDateRange.start.getTime();
-      const dataFimAtual = activeDateRange.end.getTime();
-
-      const novoInicio = startDate.getTime();
-      const novoFim = endDate.getTime();
-
-      // Se a nova data está fora do intervalo já carregado
-      if (novoInicio < dataInicioAtual || novoFim > dataFimAtual) {
-        fetchPedidosWithDateRange(startDate, endDate);
-      }
-    }
-  };
 
   if (loading) {
     return (
@@ -922,14 +876,16 @@ export const Pedidos: React.FC = () => {
     <div className="w-full p-2">
       <h1 className="text-3xl font-bold">Pedidos</h1>
 
-      <PedidosFilter
+      <PedidosFilter 
         searchType={searchType}
         setSearchType={setSearchType}
         searchValue={searchValue}
         setSearchValue={setSearchValue}
-        onDateChange={handleDateChange}
-        periodFilter={currentPeriodFilter}
-        onPeriodFilterChange={handlePeriodFilterChange}
+        currentPeriodFilter={currentPeriodFilter}
+        applyPeriodFilter={applyPeriodFilter}
+        activeDateRange={activeDateRange}
+        setActiveDateRange={setActiveDateRange}
+        fetchPedidosWithDateRange={fetchPedidosWithDateRange}
       />
 
       <div className="rounded-md border">
@@ -992,3 +948,4 @@ export const Pedidos: React.FC = () => {
     </div>
   );
 };
+

@@ -18,18 +18,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Search, X } from "lucide-react";
 import { Table } from "@tanstack/react-table";
-
-interface Parcela {
-  codigoBoleto: number;
-  codigoPN: string;
-  nomePN: string;
-  cnpj: string;
-  numNF: string;
-  parcela: string;
-  valorParcela: number;
-  dataVencimento: string;
-  id: number;
-}
+import { Parcela } from '../../../types/parcela';
 
 interface DateRange {
   start: Date | null;
@@ -43,7 +32,12 @@ interface BoletoFilterProps {
   onSearch: (value: string, type: FilterType) => void;
 }
 
-type FilterType = "codigoBoleto" | "nomePN" | "cnpj" | "numNF" | "dataVencimento";
+type FilterType =
+  | "codigoBoleto"
+  | "nomePN"
+  | "cnpj"
+  | "numNF"
+  | "dataVencimento";
 
 export function BoletoFilter({
   allParcelas,
@@ -51,13 +45,16 @@ export function BoletoFilter({
   table,
   onSearch,
 }: BoletoFilterProps) {
-  const [filterType, setFilterType] = React.useState<FilterType>("codigoBoleto");
+  const [filterType, setFilterType] =
+    React.useState<FilterType>("codigoBoleto");
   const [searchValue, setSearchValue] = React.useState<string>("");
   const [dateRange, setDateRange] = React.useState<DateRange>({
     start: null,
     end: null,
   });
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+  // Flag para controlar se estamos fazendo uma nova pesquisa que requer reset da página
+  const [isNewSearch, setIsNewSearch] = React.useState(false);
 
   const applyFilters = React.useCallback(() => {
     let filteredData = [...allParcelas];
@@ -70,10 +67,7 @@ export function BoletoFilter({
           const [year, month, day] = datePart.split("-").map(Number);
           const itemDate = new Date(Date.UTC(year, month - 1, day));
 
-          return (
-            itemDate >= dateRange.start! &&
-            itemDate <= dateRange.end!
-          );
+          return itemDate >= dateRange.start! && itemDate <= dateRange.end!;
         });
       }
     } else if (searchValue) {
@@ -105,31 +99,55 @@ export function BoletoFilter({
     }
 
     setParcelas(filteredData);
-    table.setPageIndex(0);
-  }, [allParcelas, filterType, searchValue, dateRange, setParcelas, table]);
+
+    // Só resetamos o índice da página quando for uma nova pesquisa
+    if (isNewSearch) {
+      table.setPageIndex(0); // Reinicia o flag
+    }
+  }, [
+    allParcelas,
+    filterType,
+    searchValue,
+    dateRange,
+    setParcelas,
+    table,
+    isNewSearch,
+  ]);
 
   const resetFilters = () => {
     setSearchValue("");
     setFilterType("codigoBoleto");
     setDateRange({ start: null, end: null });
+    setIsNewSearch(true); // Marcar como nova pesquisa
     setParcelas(allParcelas);
     table.setPageIndex(0);
   };
 
   const handleSearch = React.useCallback(() => {
+    setIsNewSearch(true); // Indicar que é uma nova pesquisa
     applyFilters();
+    setIsNewSearch(false);
   }, [searchValue, filterType, onSearch, applyFilters]);
 
   // Automatic search on input change
   React.useEffect(() => {
     if (filterType !== "dataVencimento") {
       const delayDebounce = setTimeout(() => {
+        // Indicar que é uma nova pesquisa
         handleSearch();
       }, 300); // debounce delay
 
       return () => clearTimeout(delayDebounce);
     }
   }, [searchValue, filterType, handleSearch]);
+
+  // Efeito para aplicar filtros quando o período de data mudar
+  React.useEffect(() => {
+    if (filterType === "dataVencimento" && dateRange.start && dateRange.end) {
+      // Indicar que é uma nova pesquisa
+      applyFilters();
+    }
+  }, [dateRange, filterType, applyFilters]);
 
   const getPlaceholder = () => {
     switch (filterType) {
@@ -157,30 +175,6 @@ export function BoletoFilter({
     <div className="flex flex-col gap-4 pt-4 pb-2">
       <div className="flex items-center gap-2">
         <div className="flex items-center flex-1 gap-2">
-          <div>
-            <Select
-              value={filterType}
-              onValueChange={(value: FilterType) => {
-                setFilterType(value);
-                setSearchValue("");
-                if (value === "dataVencimento") {
-                  setIsCalendarOpen(true);
-                }
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filtrar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="codigoBoleto">Código</SelectItem>
-                <SelectItem value="nomePN">Nome</SelectItem>
-                <SelectItem value="cnpj">CNPJ</SelectItem>
-                <SelectItem value="numNF">NF</SelectItem>
-                <SelectItem value="dataVencimento">Vencimento</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {filterType === "dataVencimento" ? (
             <div className="flex-1">
               <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
@@ -215,6 +209,8 @@ export function BoletoFilter({
                           start: range.from,
                           end: endDate,
                         });
+                        // Fecha o popover após selecionar as datas
+                        setIsCalendarOpen(false);
                       } else {
                         setDateRange({
                           start: range?.from || null,
@@ -229,7 +225,11 @@ export function BoletoFilter({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDateRange({ start: null, end: null })}
+                      onClick={() => {
+                        setDateRange({ start: null, end: null });
+                        // Opcionalmente, fechar o popover também ao limpar
+                        setIsCalendarOpen(false);
+                      }}
                     >
                       <X className="mr-2 h-4 w-4" />
                       Limpar
@@ -250,7 +250,33 @@ export function BoletoFilter({
             </div>
           )}
 
-          {/* Apenas o botão de limpar permanece */}
+          {/* Select movido para a direita do input */}
+          <div>
+            <Select
+              value={filterType}
+              onValueChange={(value: FilterType) => {
+                setFilterType(value);
+                setSearchValue("");
+                setIsNewSearch(true); // Marcar como nova pesquisa ao mudar o tipo de filtro
+                if (value === "dataVencimento") {
+                  setIsCalendarOpen(true);
+                }
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filtrar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="codigoBoleto">Código</SelectItem>
+                <SelectItem value="nomePN">Nome</SelectItem>
+                <SelectItem value="cnpj">CNPJ</SelectItem>
+                <SelectItem value="numNF">NF</SelectItem>
+                <SelectItem value="dataVencimento">Vencimento</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Botão de limpar permanece */}
           <Button variant="outline" onClick={resetFilters}>
             Limpar filtros
           </Button>

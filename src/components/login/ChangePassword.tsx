@@ -40,7 +40,7 @@ export function ChangePassword({
       // Tentativa na API interna
       try {
         const response = await axios.post(
-          "/api/internal/Auth/reset-password", 
+          "/api/external/Auth/reset-password", 
           { email: emailToReset },
           {
             headers: { "Content-Type": "application/json" },
@@ -57,7 +57,7 @@ export function ChangePassword({
       } catch (internalError) {
         // Fallback para API externa
         const response = await axios.post(
-          "/api/internal/Auth/reset-password", 
+          "/api/external/Auth/reset-password", 
           { email: emailToReset },
           {
             headers: { "Content-Type": "application/json" },

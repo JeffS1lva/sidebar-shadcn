@@ -63,47 +63,48 @@ export function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <Router>
-        <Routes>
-          {/* Rota pública do login */}
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ? (
-                <Navigate to="/home" />
-              ) : (
-                <LoginForm onLoginSuccess={handleLoginSuccess} />
-              )
-            }
-          />
+        
+          <Routes>
+            {/* Rota pública do login */}
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ? (
+                  <Navigate to="/inicio" />
+                ) : (
+                  <LoginForm onLoginSuccess={handleLoginSuccess} />
+                )
+              }
+            />
 
-          {/* Rotas protegidas */}
-          <Route
-            path="/*"
-            element={
-              isAuthenticated ? (
-                <AuthenticatedLayout
-                  authData={authData}
-                  onLogout={handleLogout}
-                >
-                  <Routes>
-                    <Route path="/home" element={<Home />} />
-                    <Route path="/pedidos" element={<Pedidos />} />
-                    <Route path="/cotacao" element={<Cotacao />} />
-                    <Route path="/boletos" element={<Boletos />} />
-                    {/* Redireciona para home se a rota não corresponder */}
-                    <Route path="*" element={<Navigate to="/home" />} />
-                  </Routes>
-                </AuthenticatedLayout>
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
+            {/* Rotas protegidas */}
+            <Route
+              path="/*"
+              element={
+                isAuthenticated ? (
+                  <AuthenticatedLayout
+                    authData={authData}
+                    onLogout={handleLogout}
+                  >
+                    <Routes>
+                      <Route path="/inicio" element={<Home />} />
+                      <Route path="/pedidos" element={<Pedidos />} />
+                      <Route path="/cotacao" element={<Cotacao />} />
+                      <Route path="/boletos" element={<Boletos />} />
+                      {/* Redireciona para home se a rota não corresponder */}
+                      <Route path="*" element={<Navigate to="/inicio" />} />
+                    </Routes>
+                  </AuthenticatedLayout>
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
 
-          {/* Redireciona a rota raiz para login */}
-          <Route path="/" element={<Navigate to="/login" />} />
-        </Routes>
-
+            {/* Redireciona a rota raiz para login */}
+            <Route path="/" element={<Navigate to="/login" />} />
+          </Routes>
+       
         {/* Toaster para as notificações do Sonner */}
         <Toaster />
       </Router>
@@ -135,13 +136,13 @@ function AuthenticatedLayout({
     // Check if token exists and is not expired
     const token = localStorage.getItem("token");
     const isAuth = localStorage.getItem("isAuthenticated") === "true";
-    
+
     // If no token or no auth data, logout
     if (!token || !isAuth) {
       onLogout();
       navigate("/login");
     }
-    
+
     // You could also add token validation logic here if your token contains expiration info
   }, [location.pathname, onLogout, navigate]);
 

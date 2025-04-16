@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Paginacao } from "./Pedidos/Paginacao";
+import { Paginacao } from "./Paginacao";
 import { Circle, Eye, Package, PackageOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
@@ -38,8 +38,8 @@ interface Cotacao {
   uf: string;
   valor_Total_Cotacao: number;
   codSlp1: number;
-  codSlp2: number
-  codSlp3: number 
+  codSlp2: number;
+  codSlp3: number;
   vendedor1: string;
   vendedor2: string | null;
   vendedor3: string | null;
@@ -50,7 +50,6 @@ interface TokenDecoded {
   exp: number;
   [key: string]: any;
 }
-
 
 const numericFilter: FilterFn<Cotacao> = (row, columnId, filterValue) => {
   const value = row.getValue(columnId);
@@ -165,7 +164,7 @@ export function Cotacao() {
             loadingEl.className =
               "fixed inset-0 bg-black/50 flex items-center justify-center z-50";
             loadingEl.innerHTML = `
-              <div class="bg-white rounded-md p-4 flex flex-col items-center">
+              <div class="dark:bg-gray-800 dark:text-white bg-white rounded-md p-4 flex flex-col items-center">
                 <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-2"></div>
                 <p>Carregando Cotação ${numeroCotacao}...</p>
               </div>
@@ -174,7 +173,7 @@ export function Cotacao() {
 
             // Substituir pelo endpoint correto quando disponível
             const response = await axios.get(
-              `/api/internal/Pedidos/imprime-cotacao/${cotacaoId}`,
+              `/api/external/Pedidos/imprime-cotacao/${numeroCotacao}`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -200,20 +199,20 @@ export function Cotacao() {
               "fixed inset-0 bg-black/75 flex flex-col items-center justify-center z-50";
 
             viewerContainer.innerHTML = `
-              <div class="bg-white rounded-md w-4/5 h-4/5 flex flex-col overflow-hidden">
-                <div class="flex justify-between items-center p-3 border-b">
+              <div class="dark:bg-gray-900 bg-white rounded-md w-4/5 h-4/5 flex flex-col overflow-hidden">
+                <div class="flex justify-between items-center p-3 border-b border-gray-700">
                   <h3 class="font-medium">Cotação #${numeroCotacao}</h3>
                   <div class="flex gap-2">
-                    <a href="${fileUrl}" download="cotacao-${numeroCotacao}.pdf" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">
+                    <a href="${fileUrl}" download="cotacao-${numeroCotacao}.pdf" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 dark:text-black">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                       Download
                     </a>
-                    <button id="close-viewer-${cotacaoIdStr}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3">
+                    <button id="close-viewer-${cotacaoIdStr}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3  dark:bg-gray-700 dark:hover:bg-gray-600 ">
                       Fechar
                     </button>
                   </div>
                 </div>
-                <div class="flex-1 overflow-hidden">
+                <div class="flex-1 overflow-hidden dark:bg-gray-900">
                   <iframe 
                     src="${fileUrl}" 
                     type="application/pdf" 
