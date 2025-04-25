@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { ModeToggle } from "../Dark-Mode/ModeToggle";
 import LogoDark from "@/assets/logo.png";
 import LogoLight from "@/assets/logoBranco.png";
-import axios from "@/utils/axiosConfig"; 
+import axios from "@/utils/axiosConfig";
 import { FirstAcess } from "./FirstAcess";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -26,22 +26,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { TimeoutErrorModal } from "./TimeoutErrorModal";
 
 
-
-const ThemeAwareLogo = () => {
-  return (
-    <div className="relative flex justify-center">
-      <img src={LogoDark} alt="logo-login" className="max-w-72 dark:hidden" />
-      <img
-        src={LogoLight}
-        alt="logo-login"
-        className="max-w-72 hidden dark:block"
-      />
-    </div>
-  );
-};
-
+// Types
 interface UserData {
   login: string;
   email: string;
@@ -55,115 +49,163 @@ interface LoginFormProps {
   onLoginSuccess: (userData: UserData) => void;
 }
 
-// Componente de Modal para Esqueceu Senha
-const ForgotPasswordModal = ({
-  onClose,
-  defaultEmail = "",
-  validateEmail,
-}: {
+interface ForgotPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultEmail?: string;
-  validateEmail: (email: string) => boolean;
-}) => {
-  const [email, setEmail] = useState(defaultEmail);
-  const [isProcessing, setIsProcessing] = useState(false);
+}
 
-  const handleForgotPassword = async () => {
+interface ApiResponse {
+  data?: {
+    token?: string;
+    firstName?: string;
+    lastName?: string;
+    message?: string;
+  };
+  status: number;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+    status: number;
+  };
+  code?: string;
+  message: string;
+}
+
+// Utility functions
+const validateEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const showErrorToast = (title: string, description: string): void => {
+  toast.error(title, {
+    description,
+    style: {
+      backgroundColor: "white",
+      color: "red",
+      boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
+    },
+  });
+};
+
+const showSuccessToast = (title: string, description: string): void => {
+  toast.success(title, {
+    description,
+    style: {
+      backgroundColor: "white",
+      color: "green",
+      boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
+    },
+  });
+};
+
+// Helper function for API calls with fallback
+const makeApiCallWithFallback = async (
+  internalEndpoint: string,
+  externalEndpoint: string,
+  data: Record<string, any>,
+  timeout: number = 20000
+): Promise<ApiResponse> => {
+  try {
+    // Try internal API first
+    const response = await axios.post(internalEndpoint, data, {
+      headers: { "Content-Type": "application/json" },
+      timeout,
+    });
+    return response;
+  } catch (internalError) {
+    // Fallback to external API
+    const response = await axios.post(externalEndpoint, data, {
+      headers: { "Content-Type": "application/json" },
+      timeout,
+    });
+    return response;
+  }
+};
+
+// Helper function for error handling
+const handleApiError = (error: ApiError): string => {
+  if (error.code === "ECONNABORTED" || error.message.includes("timeout")) {
+    return "E-mail ou senha inválidos, tente novamente.";
+  } else if (error.response) {
+    if (error.response.status === 404) {
+      return "E-mail não encontrado no sistema.";
+    } else if (error.response.status === 429) {
+      return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+    } else {
+      return error.response.data?.message || `Erro ${error.response.status}`;
+    }
+  } else if (error.message.includes("Network Error")) {
+    return "Servidor indisponível. Verifique sua conexão.";
+  }
+  return "Falha ao processar sua solicitação. Por favor, tente novamente.";
+};
+
+// Check if error is a timeout or connection error
+const isTimeoutOrConnectionError = (error: ApiError): boolean => {
+  return (
+    error.code === "ECONNABORTED" ||
+    error.message.includes("timeout") ||
+    error.message.includes("Network Error")
+  );
+};
+
+const ThemeAwareLogo: React.FC = () => {
+  return (
+    <div className="relative flex justify-center">
+      <img src={LogoDark} alt="logo-login" className="max-w-72 dark:hidden" />
+      <img
+        src={LogoLight}
+        alt="logo-login"
+        className="max-w-72 hidden dark:block"
+      />
+    </div>
+  );
+};
+
+// Componente de Modal para Esqueceu Senha
+const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
+  onClose,
+  defaultEmail = "",
+}) => {
+  const [email, setEmail] = useState<string>(defaultEmail);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+  const handleForgotPassword = async (): Promise<void> => {
     let emailToReset = email;
 
     // Validate email
     if (!emailToReset || !validateEmail(emailToReset)) {
-      toast.error("E-mail inválido", {
-        description: "Por favor, insira um e-mail válido para continuar",
-      });
+      showErrorToast("E-mail inválido", "Por favor, insira um e-mail válido para continuar");
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      // Tentativa na API interna
-      try {
-        const response = await axios.post(
-          "/api/internal/Auth/reset-password",
-          { email: emailToReset },
-          {
-            headers: { "Content-Type": "application/json" },
-            timeout: 30000,
-          }
+      const response = await makeApiCallWithFallback(
+        "/api/internal/Auth/reset-password",
+        "/api/external/Auth/reset-password",
+        { email: emailToReset },
+        30000
+      );
+
+      if (response.status === 200) {
+        showSuccessToast(
+          "Solicitação enviada",
+          "Link de acesso enviado com sucesso. Verifique seu e-mail."
         );
-
-        if (response.status === 200) {
-          toast.success("Solicitação enviada", {
-            description:
-              "Link de acesso enviado com sucesso. Verifique seu e-mail.",
-            style: {
-              backgroundColor: "white",
-              color: "green",
-              boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
-            },
-          });
-          onClose();
-        } else {
-          throw new Error("Resposta inesperada do servidor");
-        }
-      } catch (internalError) {
-        // Fallback para API externa
-        const response = await axios.post(
-          "/api/external/Auth/reset-password",
-          { email: emailToReset },
-          {
-            headers: { "Content-Type": "application/json" },
-            timeout: 30000,
-          }
-        );
-
-        if (response.status === 200) {
-          toast.success("Solicitação enviada", {
-            description:
-              "Link de redefinição de senha enviado com sucesso. Verifique seu e-mail.",
-            style: {
-              backgroundColor: "white",
-              color: "green",
-              boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
-            },
-          });
-          onClose();
-        } else {
-          throw new Error("Resposta inesperada do servidor");
-        }
+        onClose();
+      } else {
+        throw new Error("Resposta inesperada do servidor");
       }
-    } catch (error: any) {
-      console.error("Erro ao solicitar redefinição de senha:", error);
-
-      let errorMessage =
-        "Falha ao enviar e-mail de redefinição. Tente novamente mais tarde.";
-
-      if (error.response) {
-        // Tratamento de códigos de erro específicos
-        if (error.response.status === 404) {
-          errorMessage = "E-mail não encontrado no sistema.";
-        } else if (error.response.status === 429) {
-          errorMessage =
-            "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
-        } else if (error.response.data?.message) {
-          errorMessage = error.response.data.message;
-        }
-      } else if (error.code === "ECONNABORTED") {
-        errorMessage = "Tempo de conexão esgotado. Verifique sua internet.";
-      } else if (error.message.includes("Network Error")) {
-        errorMessage = "Servidor indisponível. Verifique sua conexão.";
-      }
-
-      toast.error("Falha na solicitação", {
-        description: errorMessage,
-        style: {
-          backgroundColor: "white",
-          color: "red",
-          boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
-        },
-      });
+    } catch (error) {
+      const errorMessage = handleApiError(error as ApiError);
+      showErrorToast("Falha na solicitação", errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -214,42 +256,47 @@ const ForgotPasswordModal = ({
   );
 };
 
-export function LoginForm({
+export const LoginForm: React.FC<LoginFormProps> = ({
   className,
   onLoginSuccess,
   ...props
-}: LoginFormProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [showTooltip, setShowTooltip] = useState(true);
-  const [isFirstAccess, setIsFirstAccess] = useState(false);
-  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+}) => {
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [showTooltip, setShowTooltip] = useState<boolean>(true);
+  const [isFirstAccess, setIsFirstAccess] = useState<boolean>(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState<boolean>(false);
+  const [timeoutErrorCount, setTimeoutErrorCount] = useState<number>(0);
+  const [showSuggestionAlert, setShowSuggestionAlert] = useState<boolean>(false);
+  // Novo estado para controlar o modal de timeout
+  const [showTimeoutModal, setShowTimeoutModal] = useState<boolean>(false);
   const modeToggleRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Função agora explicitamente retorna um booleano
-  const validateEmail = (email: string): boolean => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  // Reset timeout error count after 10 minutes
+  useEffect(() => {
+    if (timeoutErrorCount > 2) {
+      const timer = setTimeout(() => {
+        setTimeoutErrorCount(0);
+      }, 10 * 60 * 1000); // 10 minutes
+      return () => clearTimeout(timer);
+    }
+  }, [timeoutErrorCount]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
     if (!validateEmail(email)) {
       setError("Por favor, insira um email válido");
-      toast.error("Email inválido", {
-        description: "Por favor, insira um email válido para continuar",
-      });
+      showErrorToast("Email inválido", "Por favor, insira um email válido para continuar");
       return;
     }
 
     if (!password) {
       setError("Por favor, insira sua senha");
-      toast.error("Senha requerida", {
-        description: "Por favor, insira sua senha para continuar",
-      });
+      showErrorToast("Senha requerida", "Por favor, insira sua senha para continuar");
       return;
     }
 
@@ -257,32 +304,19 @@ export function LoginForm({
     setError("");
 
     try {
-      // Primeiro tentamos a API interna
-      let response;
-      try {
-        response = await axios.post(
-          "/api/internal/Auth/login",
-          { email, password },
-          {
-            headers: { "Content-Type": "application/json" },
-            timeout: 20000, // Timeout curto para tentativa interna
-          }
-        );
-      } catch (internalError) {
-        // Fallback para API externa
-        response = await axios.post(
-          "/api/external/Auth/login",
-          { email, password },
-          {
-            headers: { "Content-Type": "application/json" },
-            timeout: 20000,
-          }
-        );
-      }
+      const response = await makeApiCallWithFallback(
+        "/api/internal/Auth/login",
+        "/api/external/Auth/login",
+        { email, password }
+      );
 
       if (response.data?.token) {
         const { token, firstName = "", lastName = "" } = response.data;
 
+        // Reset error count on successful login
+        setTimeoutErrorCount(0);
+        setShowSuggestionAlert(false);
+        
         // Armazenamento seguro do token
         localStorage.setItem("token", token);
 
@@ -297,45 +331,47 @@ export function LoginForm({
 
         navigate("/inicio");
       } else {
-        throw new Error();
+        throw new Error("Token não encontrado na resposta");
       }
-    } catch (error: any) {
-      console.error("Erro completo:", {
-        message: error.message,
-        config: error.config,
-        response: error.response?.data,
-      });
-
-      let errorMessage = "Falha no login, tente novamente";
-
-      if (error.response) {
-        // Erros 4xx/5xx
-        errorMessage =
-          error.response.data?.message || `Erro ${error.response.status}`;
-      } else if (error.code === "ECONNABORTED") {
-        errorMessage = "Tempo de conexão esgotado";
-      } else if (error.message.includes("Network Error")) {
-        errorMessage = "Servidor indisponível. Verifique sua conexão.";
-      }
-
+    } catch (error) {
+      const typedError = error as ApiError;
+      const errorMessage = handleApiError(typedError);
       setError(errorMessage);
-      toast.error("Falha no login", {
-        description: errorMessage,
-      });
+      showErrorToast("Falha no login", errorMessage);
+      
+      // Check if it's a timeout or connection error
+      if (isTimeoutOrConnectionError(typedError)) {
+        const newCount = timeoutErrorCount + 1;
+        setTimeoutErrorCount(newCount);
+        
+        // Mostrar modal somente após 3 erros consecutivos de timeout
+        if (newCount >= 3) {
+          setShowTimeoutModal(true);
+        } else {
+          // Para menos de 3 erros, mostrar apenas o alerta de sugestão
+          setShowSuggestionAlert(false);
+        }
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Lógica de primeiro acesso movida para o LoginForm
-  const handleRequestAccess = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const navigateToLoginWithFirstAccess = (email: string) => {
+    // Em uma aplicação com roteamento, você poderia usar um hook de navegação aqui
+    // Por exemplo: router.push('/login?firstAccess=true&email=' + encodeURIComponent(email));
+    
+    // Como este é um exemplo simplificado, vamos apenas definir os estados:
+    setEmail(email);
+    setIsFirstAccess(true);
+    setShowTimeoutModal(false);
+  };
 
+  // Lógica de primeiro acesso - modificada para fechar o modal de timeout
+  const handleRequestAccess = async (fromModal: boolean = false): Promise<void> => {
     if (!validateEmail(email)) {
       setError("Por favor, insira um email válido");
-      toast.error("Email inválido", {
-        description: "Por favor, insira um email válido para solicitar acesso",
-      });
+      showErrorToast("Email inválido", "Por favor, insira um email válido para solicitar acesso");
       return;
     }
 
@@ -354,65 +390,80 @@ export function LoginForm({
 
       if (response.status === 200) {
         setError("");
-        // Usar toast ao invés de alert
-        toast.success("Solicitação enviada com sucesso!", {
-          description:
-            "Verifique seu e-mail para continuar. Redirecionando para o login...",
-          style: {
-            backgroundColor: "white",
-            color: "green",
-            boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
-          },
-          duration: 5000,
-        });
+        showSuccessToast(
+          "Solicitação enviada com sucesso!",
+          "Verifique seu e-mail para continuar. Redirecionando para o login..."
+        );
+
+        // Reset error count on successful request
+        setTimeoutErrorCount(0);
+        setShowSuggestionAlert(false);
+        
+        // Fechar o modal de timeout se estiver visível
+        if (fromModal) {
+          setShowTimeoutModal(false);
+        }
 
         // Limpar o campo de email
         setEmail("");
 
-        // Volta para o formulário de login normal após um breve delay para que o usuário veja o toast
+        // Volta para o formulário de login normal após um breve delay
         setTimeout(() => {
           setIsFirstAccess(false);
         }, 1000);
       }
-    } catch (requestError: any) {
-      let errorMessage = "E-mail inválido";
-
-      if (requestError.response) {
-        if (requestError.response.status === 404) {
-          errorMessage = "E-mail não cadastrado ou incorreto.";
-        } else {
-          errorMessage =
-            requestError.response.data?.message ||
-            `Erro ${requestError.response.status}`;
-        }
-      } else if (requestError.code === "ECONNABORTED") {
-        errorMessage = "Tempo de conexão esgotado";
-      } else if (requestError.message.includes("Network Error")) {
-        errorMessage = "Servidor indisponível. Verifique sua conexão.";
-      }
-
+    } catch (error) {
+      const typedError = error as ApiError;
+      const errorMessage = handleApiError(typedError);
       setError(errorMessage);
-      toast.error("Falha na solicitação", {
-        description: errorMessage,
-        style: {
-          backgroundColor: "white",
-          color: "red",
-          boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
-        },
-      });
+      showErrorToast("Falha na solicitação", errorMessage);
+      
+      // Check if it's a timeout or connection error
+      if (isTimeoutOrConnectionError(typedError)) {
+        setTimeoutErrorCount(timeoutErrorCount + 1);
+        // Se estiver no modal, mantém o modal aberto
+        if (fromModal) {
+          setShowTimeoutModal(true);
+        }
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFirstAccessToggle = (value: boolean) => {
+  const handleFirstAccessToggle = (value: boolean): void => {
     setIsFirstAccess(value);
     setError(""); // Limpa erros ao alternar modos
+    
+    // Hide suggestion alert and timeout modal when toggling
+    setShowSuggestionAlert(false);
+    setShowTimeoutModal(false);
+  };
 
-    // Limpar mensagens de erro quando alternar entre os modos
-    if (error) {
-      setError("");
+  // Helper to handle opening the password recovery dialog
+  const openForgotPassword = (fromModal: boolean = false): void => {
+    setForgotPasswordOpen(true);
+    setShowSuggestionAlert(false);
+    
+    // Fechar o modal de timeout se chamado a partir dele
+    if (fromModal) {
+      setShowTimeoutModal(false);
     }
+  };
+
+  // Função para lidar com o fechamento do modal de timeout
+  const handleCloseTimeoutModal = (): void => {
+    setShowTimeoutModal(false);
+  };
+
+  // Função para processar requisição de acesso do modal
+  const handleRequestAccessFromModal = (): void => {
+    handleRequestAccess(true);
+  };
+
+  // Função para abrir a recuperação de senha do modal
+  const handleForgotPasswordFromModal = (): void => {
+    openForgotPassword(true);
   };
 
   return (
@@ -444,6 +495,18 @@ export function LoginForm({
         </div>
       </div>
 
+      {/* Modal de Timeout Error */}
+      <TimeoutErrorModal
+        isOpen={showTimeoutModal}
+        onClose={handleCloseTimeoutModal}
+        email={email}
+        onEmailChange={setEmail}
+        onRequestAccess={handleRequestAccessFromModal}
+        onForgotPassword={handleForgotPasswordFromModal}
+        loading={loading}
+        navigateToLoginWithFirstAccess={navigateToLoginWithFirstAccess}
+      />
+
       <div
         className={`flex flex-col gap-6 w-auto px-8 sm:px-16 lg:px-96 py-10  ${
           loading ? "opacity-70 pointer-events-none" : ""
@@ -453,8 +516,44 @@ export function LoginForm({
         <div className="flex justify-center mt-7">
           <ThemeAwareLogo />
         </div>
+        
+        {/* Alert agora só aparece em situações não relacionadas a timeout */}
+        {showSuggestionAlert && !showTimeoutModal && (
+          <Alert variant="destructive" className="mb-2 animate-in fade-in duration-300">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Dificuldades para acessar?</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">Estamos com dificuldades para conectar. Você tem algumas opções:</p>
+              <ul className="list-disc pl-5 mb-3 space-y-1">
+                {!isFirstAccess && (
+                  <li>Se este é seu primeiro acesso, clique no botão 
+                    <Button 
+                      variant="link" 
+                      className="px-1 py-0 h-auto text-white underline"
+                      onClick={() => handleFirstAccessToggle(true)}
+                    >
+                      Primeiro Acesso
+                    </Button>
+                    no canto superior direito
+                  </li>
+                )}
+                <li>Verifique se o e-mail e senha estão corretos</li>
+                <li>
+                  <Button 
+                    variant="link" 
+                    className="px-0 py-0 h-auto text-white underline"
+                    onClick={() => openForgotPassword()}
+                  >
+                    Clique aqui
+                  </Button> para solicitar uma senha provisória
+                </li>
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* Resto do código permanece o mesmo */}
         <Card>
-          {/* Mode switch moved to top of card */}
           <div className="absolute top-42 right-95 mt-4 mr-4">
             <FirstAcess
               onToggle={handleFirstAccessToggle}
@@ -493,7 +592,7 @@ export function LoginForm({
                 transition={{ duration: 0.3 }}
               >
                 {isFirstAccess ? (
-                  <form onSubmit={handleRequestAccess}>
+                  <form onSubmit={(e) => { e.preventDefault(); handleRequestAccess(false); }}>
                     <div className="flex flex-col gap-6">
                       <div className="grid gap-2">
                         <Label htmlFor="email">Email</Label>
@@ -546,7 +645,6 @@ export function LoginForm({
                           value={email}
                           placeholder="m@example.com"
                           onChange={(e) => setEmail(e.target.value)}
-                          required
                           disabled={loading}
                         />
                       </div>
@@ -571,7 +669,6 @@ export function LoginForm({
                               isOpen={forgotPasswordOpen}
                               onClose={() => setForgotPasswordOpen(false)}
                               defaultEmail={email}
-                              validateEmail={validateEmail}
                             />
                           </Dialog>
                         </div>
@@ -581,7 +678,6 @@ export function LoginForm({
                           id="password"
                           type="password"
                           placeholder="Digite sua senha.."
-                          required
                           disabled={loading}
                         />
                       </div>
@@ -620,4 +716,4 @@ export function LoginForm({
       </div>
     </>
   );
-}
+};

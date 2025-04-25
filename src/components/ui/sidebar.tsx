@@ -169,7 +169,7 @@ function Sidebar({
       <div
         data-slot="sidebar"
         className={cn(
-          "bg-sidebar text-sidebar-foreground dark:bg-sidebar-dark dark:text-sidebar-foreground-dark flex h-full w-(--sidebar-width) flex-col",
+          "bg-sidebar text-sidebar-foreground dark:bg-sidebar-dark dark:text-sidebar-foreground-dark flex h-full w-(--sidebar-width) flex-col ",
           className
         )}
         {...props}
@@ -476,7 +476,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring dark:ring-sidebar-ring-dark transition-[width,height,padding] hover:bg-sidebar-accent dark:hover:bg-sidebar-accent-dark hover:text-sidebar-accent-foreground dark:hover:text-sidebar-accent-foreground-dark focus-visible:ring-2 active:bg-sidebar-accent dark:active:bg-sidebar-accent-dark active:text-sidebar-accent-foreground dark:active:text-sidebar-accent-foreground-dark disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent dark:data-[active=true]:bg-sidebar-accent-dark data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground dark:data-[active=true]:text-sidebar-accent-foreground-dark data-[state=open]:hover:bg-sidebar-accent dark:data-[state=open]:hover:bg-sidebar-accent-dark data-[state=open]:hover:text-sidebar-accent-foreground dark:data-[state=open]:hover:text-sidebar-accent-foreground-dark group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring dark:ring-sidebar-ring-dark transition-[width,height,padding] hover:bg-sidebar-accent dark:hover:bg-sidebar-accent-dark hover:text-sidebar-accent-foreground dark:hover:text-sidebar-accent-foreground-dark focus-visible:ring-2 active:bg-sidebar-accent dark:active:bg-sidebar-accent-dark active:text-sidebar-accent-foreground dark:active:text-sidebar-accent-foreground-dark disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent dark:data-[active=true]:bg-sidebar-accent-dark data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground dark:data-[active=true]:text-sidebar-accent-foreground-dark data-[state=open]:hover:bg-sidebar-accent dark:data-[state=open]:hover:bg-sidebar-accent-dark data-[state=open]:hover:text-sidebar-accent-foreground dark:data-[state=open]:hover:text-sidebar-accent-foreground-dark group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0  ",
   {
     variants: {
       variant: {

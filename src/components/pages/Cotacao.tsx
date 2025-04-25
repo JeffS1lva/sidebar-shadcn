@@ -28,6 +28,7 @@ import { Circle, Eye, Package, PackageOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { CotacaoFilter } from "./Cotacao/CotacaoFilter";
+import EmptyCotacaoError from "./Cotacao/EmptyCotacaoError";
 
 interface Cotacao {
   n_Cotacao: number;
@@ -419,7 +420,7 @@ export function Cotacao() {
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 8,
+        pageSize: 6,
       },
     },
   });
@@ -501,9 +502,7 @@ export function Cotacao() {
         localStorage.removeItem("token");
         navigate("/login");
       } else {
-        setError(
-          "Ocorreu um erro ao carregar as cotações. Por favor, tente novamente."
-        );
+        setError("error");
       }
     } finally {
       setLoading(false);
@@ -525,6 +524,15 @@ export function Cotacao() {
     }
   }, [searchValue, searchType, table]);
 
+  const handleBack = () => {
+    navigate("/inicio"); // ou qualquer outra rota conforme a estrutura da sua aplicação
+  };
+
+  const handleRetry = () => {
+    // Tenta buscar as cotações novamente usando o mesmo intervalo de datas
+    fetchCotacoes();
+  };
+
   // Handler para filtros de data
 
   if (loading) {
@@ -536,18 +544,25 @@ export function Cotacao() {
     );
   }
 
-  if (error) {
+  if (error === "empty") {
     return (
-      <div className="p-4 bg-red-100 text-red-700 rounded-md">
-        <h3 className="font-bold mb-2">Erro</h3>
-        <p>{error}</p>
-        <button
-          className="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded"
-          onClick={() => window.location.reload()}
-        >
-          Tentar novamente
-        </button>
-      </div>
+      <EmptyCotacaoError
+        alertMessage="Não foram encontrados cotações."
+        onRetry={handleRetry}
+        onBack={handleBack}
+        showBackButton={true}
+      />
+    );
+  }
+
+  if (error === "error") {
+    return (
+      <EmptyCotacaoError
+        alertMessage="Ocorreu um erro ao carregar as cotações. Por favor, tente novamente."
+        onRetry={handleRetry}
+        onBack={handleBack}
+        showBackButton={true}
+      />
     );
   }
 

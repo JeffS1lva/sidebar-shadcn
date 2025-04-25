@@ -30,6 +30,7 @@ import { PedidosFilter } from "./Pedidos/PedidosFilter";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "sonner";
+import EmptyPedidosError from "./Pedidos/EmptyPedidosError";
 
 interface Pedido {
   status: any;
@@ -109,23 +110,28 @@ export const Pedidos: React.FC = () => {
   });
 
   const getStatusConfig = (status: string) => {
-    const config = {
+    const config: {
+      classes: string;
+      icon: JSX.Element;
+      text?: string;
+    } = {
       classes: "",
       icon: <Circle className="h-3 w-3 mr-1" />,
     };
 
     switch (status) {
       case "Aberto":
-        config.classes = "bg-yellow-100 text-yellow-800";
+        config.classes = "w-32 bg-yellow-100 text-yellow-800";
         config.icon = <PackageOpen className="h-3 w-3 mr-1" />;
         break;
       case "Fechado":
-        config.classes = "bg-green-100 text-green-800";
+        config.classes = "w-32 bg-green-100 text-green-800";
         config.icon = <Package className="h-3 w-3 mr-1" />;
         break;
       default:
-        config.classes = "bg-zinc-300 text-gray-800 px-7";
+        config.classes = " w-32 bg-zinc-300 text-gray-800";
         config.icon = <PackageSearch className="h-3 w-3 mr-1" />;
+        config.text = "Em andamento";
     }
 
     return config;
@@ -349,7 +355,7 @@ export const Pedidos: React.FC = () => {
     },
     {
       accessorKey: "dataParaEntrega",
-      header: "Data Entrega",
+      header: "Data Entre.",
       cell: ({ row }) => {
         const dateString = row.getValue("dataParaEntrega");
         if (!dateString) return "";
@@ -386,7 +392,7 @@ export const Pedidos: React.FC = () => {
       accessorKey: "statusDoPedido",
       header: "Status Pedido",
       cell: ({ row }) => {
-        const { classes, icon } = getStatusConfig(
+        const { classes, icon, text } = getStatusConfig(
           row.getValue("statusDoPedido")
         );
         return (
@@ -394,7 +400,7 @@ export const Pedidos: React.FC = () => {
             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${classes}`}
           >
             {icon}
-            {row.getValue("statusDoPedido")}
+            {text || row.getValue("statusDoPedido")}
           </div>
         );
       },
@@ -403,7 +409,7 @@ export const Pedidos: React.FC = () => {
       accessorKey: "statusPicking",
       header: "Status Picking",
       cell: ({ row }) => {
-        const { classes, icon } = getStatusConfig(
+        const { classes, icon, text } = getStatusConfig(
           row.getValue("statusPicking")
         );
         return (
@@ -411,7 +417,7 @@ export const Pedidos: React.FC = () => {
             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${classes}`}
           >
             {icon}
-            {row.getValue("statusPicking")}
+            {text || row.getValue("statusDoPedido")}
           </div>
         );
       },
@@ -662,6 +668,7 @@ export const Pedidos: React.FC = () => {
           className="whitespace-nowrap overflow-hidden text-ellipsis flex w-56"
           title={row.getValue("nomeCliente")}
         >
+          
           {row.getValue("nomeCliente")}
         </div>
       ),
@@ -674,7 +681,13 @@ export const Pedidos: React.FC = () => {
     {
       accessorKey: "nomeTransportadora",
       header: "Nome Transp.",
-      cell: ({ row }) => row.getValue("nomeTransportadora") ?? "-",
+      cell: ({ row }) => {
+        const nome: string | null = row.getValue("nomeTransportadora");
+        if (!nome) return <>-</>;
+        
+        const displayName = nome.length > 10 ? `${nome.slice(0, 23)}...` : nome;
+        return <>{displayName}</>;
+      },
     },
   ];
 
@@ -780,6 +793,7 @@ export const Pedidos: React.FC = () => {
         console.error("Estrutura de dados inesperada:", response.data);
         setAllPedidos([]);
         setPedidos([]);
+        setError("empty")
       }
 
       setError(null);
@@ -789,9 +803,7 @@ export const Pedidos: React.FC = () => {
         localStorage.removeItem("token");
         navigate("/login");
       } else {
-        setError(
-          "Ocorreu um erro ao carregar os pedidos. Por favor, tente novamente."
-        );
+        setError("error");
       }
     } finally {
       setLoading(false);
@@ -828,7 +840,6 @@ export const Pedidos: React.FC = () => {
     }
   };
 
-
   // Na primeira renderização, busca os dados do último mês (modificado de 90 dias para 1 mês)
   React.useEffect(() => {
     applyPeriodFilter("ultimoMes");
@@ -844,9 +855,18 @@ export const Pedidos: React.FC = () => {
     }
   }, [searchValue, searchType, table]);
 
-  // Handler para mudança no filtro de período
-
-  // Handler para filtros de data (quando o usuário seleciona manualmente no calendário)
+  const handleBack = () => {
+    navigate("/inicio"); // ou qualquer outra rota conforme a estrutura da sua aplicação
+  };
+  
+  // Adicione função para tentar novamente
+  const handleRetry = () => {
+    // Tenta buscar os pedidos novamente usando o mesmo intervalo de datas
+    fetchPedidosWithDateRange(
+      activeDateRange.start || new Date(), 
+      activeDateRange.end || new Date()
+    );
+  };
 
   if (loading) {
     return (
@@ -856,19 +876,29 @@ export const Pedidos: React.FC = () => {
       </div>
     );
   }
+  
 
-  if (error) {
+  if (error === "empty") {
     return (
-      <div className="p-4 bg-red-100 text-red-700 rounded-md">
-        <h3 className="font-bold mb-2">Erro</h3>
-        <p>{error}</p>
-        <button
-          className="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded"
-          onClick={() => window.location.reload()}
-        >
-          Tentar novamente
-        </button>
-      </div>
+      <EmptyPedidosError 
+        message="Não foram encontrados pedidos para o período selecionado."
+        onRetry={handleRetry}
+        onBack={handleBack}
+        showBackButton={true}
+        logoUrl="/logo.svg" // Ajuste para o caminho da sua logo
+      />
+    );
+  }
+  
+  if (error === "error") {
+    return (
+      <EmptyPedidosError 
+        message="Ocorreu um erro ao carregar os pedidos. Por favor, tente novamente."
+        onRetry={handleRetry}
+        onBack={handleBack}
+        showBackButton={true}
+        logoUrl="/logo.svg" // Ajuste para o caminho da sua logo
+      />
     );
   }
 
@@ -876,7 +906,7 @@ export const Pedidos: React.FC = () => {
     <div className="w-full p-2">
       <h1 className="text-3xl font-bold">Pedidos</h1>
 
-      <PedidosFilter 
+      <PedidosFilter
         searchType={searchType}
         setSearchType={setSearchType}
         searchValue={searchValue}
@@ -948,4 +978,3 @@ export const Pedidos: React.FC = () => {
     </div>
   );
 };
-

@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { BoletoFilter } from "../pages/Boletos/BoletosFilter";
 import { useState, useEffect } from "react";
 import { Parcela } from "../../types/parcela";
+import EmptyBoletosError from "./Boletos/EmptyBoletosError";
 
 // Função para verificar se o token está expirado
 const isTokenExpired = (token: string): boolean => {
@@ -539,6 +540,7 @@ export const Boletos: React.FC = () => {
             break;
           case "gerado":
           case "confirmado":
+          case "remessa":  // Adicionado o caso para "remessa"
             statusColor =
               "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200";
             statusLabel = "Pendente";
@@ -724,9 +726,10 @@ export const Boletos: React.FC = () => {
           );
         } else if (
           status?.toLowerCase() === "gerado" ||
-          status?.toLowerCase() === "confirmado"
+          status?.toLowerCase() === "confirmado" ||
+          status?.toLowerCase() === "remessa"  // Adicionado o caso para "remessa" aqui também
         ) {
-          // Se for "gerado" ou "confirmado", mostrar "aguardando pagamento"
+          // Se for "gerado", "confirmado" ou "remessa", mostrar "aguardando pagamento"
           return <span className="text-zinc-400">Aguardando pagamento</span>;
         } else if (status?.toLowerCase() === "pago") {
           // Para status "pago", mostrar a data de pagamento formatada
@@ -743,7 +746,7 @@ export const Boletos: React.FC = () => {
           return <span>Em atraso</span>;
         } else {
           // Para qualquer outro status
-          return <span>Pendente</span>;
+          return <span className="text-zinc-400">Aguardando pagamento</span>;
         }
       },
       filterFn: (row, columnId, filterValue) => {
@@ -866,7 +869,12 @@ export const Boletos: React.FC = () => {
 
         setAllParcelas(parcelasData);
         setParcelas(parcelasData);
-        setError(null);
+
+        if (parcelasData.length === 0) {
+          setError("empty");
+        } else {
+          setError(null);
+        }
 
         // Só redefina para a primeira página se a busca mudou
         if (searchValue && debouncedSearchValue !== searchValue) {
@@ -905,9 +913,7 @@ export const Boletos: React.FC = () => {
           );
         }
       } else {
-        setError(
-          "Ocorreu um erro ao carregar os boletos. Por favor, tente novamente."
-        );
+        setError("error");
       }
 
       setParcelas([]);
@@ -934,29 +940,47 @@ export const Boletos: React.FC = () => {
     }
   }, [searchValue, searchType, table, debouncedSearchValue]);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64 dark:text-gray-200">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        <p className="ml-4">Carregando boletos...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 dark:bg-red-900/30 dark:text-red-300 bg-red-100 text-red-700 rounded-md">
-        <h3 className="font-bold mb-2">Erro</h3>
-        <p>{error}</p>
-        <button
-          className="mt-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-600 text-white py-1 px-3 rounded"
-          onClick={() => window.location.reload()}
-        >
-          Tentar novamente
-        </button>
-      </div>
-    );
-  }
+  const handleBack = () => {
+      navigate("/inicio"); // ou qualquer outra rota conforme a estrutura da sua aplicação
+    };
+  
+    const handleRetry = () => {
+      // Tenta buscar os boletos novamente usando o mesmo intervalo de datas
+      fetchParcelas();
+    };
+  
+    // Handler para filtros de data
+  
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <p className="ml-4">Carregando boletos...</p>
+        </div>
+      );
+    }
+  
+    if (error === "empty") {
+      return (
+        <EmptyBoletosError
+          alertMessage="Não foram encontrados boletos."
+          onRetry={handleRetry}
+          onBack={handleBack}
+          showBackButton={true}
+        />
+      );
+    }
+  
+    if (error === "error") {
+      return (
+        <EmptyBoletosError
+          alertMessage="Ocorreu um erro ao carregar os boletos. Por favor, tente novamente."
+          onRetry={handleRetry}
+          onBack={handleBack}
+          showBackButton={true}
+        />
+      );
+    }
 
   // Componente de paginação modificado para usar o estado currentPage
   const handlePageChange = (page: number) => {

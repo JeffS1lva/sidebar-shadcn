@@ -31,7 +31,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Button } from "../ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { ResetPassword } from "../login/ResetPassword";
+import { ResetPassword } from "../auth/ResetPassword";
 
 // Componente de logo que muda com o tema
 const ThemeAwareLogo = () => {
@@ -153,8 +153,8 @@ export function NavegationMenu({
             <SidebarGroupContent>
               <SidebarMenu>
                 {items.map((item) => (
-                  <SidebarMenuItem key={item.title} title={item.title}>
-                    <SidebarMenuButton asChild>
+                  <SidebarMenuItem key={item.title} title={item.title} className="has-checked:bg-indigo-50">
+                    <SidebarMenuButton asChild className="has-checked:bg-indigo-50">
                       <Link to={item.url}>
                         <item.icon />
                         <span>{item.title}</span>

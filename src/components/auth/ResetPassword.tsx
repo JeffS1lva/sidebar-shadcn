@@ -24,7 +24,7 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
   const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [email, setEmail] = useState<string>(userEmail || "");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [apiResponse, setApiResponse] = useState<string>(""); // Para debugar a resposta da API
+  const [apiResponse, setApiResponse] = useState<string>("");
 
   // Atualiza o estado do email se a prop mudar
   useEffect(() => {
@@ -32,6 +32,18 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
       setEmail(userEmail);
     }
   }, [userEmail]);
+
+  // Função para limitar entrada a exatamente 8 caracteres
+  const handlePasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const value = e.target.value;
+    // Limita a entrada a 8 caracteres
+    if (value.length <= 8) {
+      setter(value);
+    }
+  };
 
   const handleSaveChanges = async () => {
     // Verifica se todos os campos obrigatórios estão preenchidos
@@ -60,7 +72,7 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
         // Log para debug
         console.log("Enviando requisição:", payload);
         
-        const response = await fetch('/api/external/Auth/change-password', { // Removido 'internal' do caminho
+        const response = await fetch('/api/external/Auth/change-password', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -100,7 +112,7 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
             color: "red",
             boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
           },
-          duration: 5000, // Aumenta a duração para facilitar a leitura
+          duration: 5000,
         });
       } finally {
         setIsLoading(false);
@@ -113,11 +125,19 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
           boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
         },
       });
+    } else if (newPassword.length !== 8) {
+      toast.error("A senha deve ter exatamente 8 caracteres.", {
+        style: {
+          backgroundColor: "white",
+          color: "red",
+          boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
+        },
+      });
     }
   };
 
   const isPasswordValid = newPassword.length === 8;
-  const isPasswordMismatch = newPassword !== confirmPassword;
+  const isPasswordMismatch = newPassword !== confirmPassword && confirmPassword.length > 0;
   const isButtonDisabled = 
     !email ||
     currentPassword.length === 0 ||
@@ -173,7 +193,7 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
               placeholder="Digite seu email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading || !!userEmail} // Desabilita se o email foi fornecido via props
+              disabled={isLoading || !!userEmail}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -194,43 +214,52 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
             <Label htmlFor="new-password" className="text-right">
               Nova Senha
             </Label>
-            <Input
-              id="new-password"
-              type="password"
-              className="col-span-3"
-              placeholder="Digite sua nova senha"
-              value={newPassword}
-              maxLength={8}
-              onChange={(e) => setNewPassword(e.target.value)}
-              disabled={isLoading}
-            />
+            <div className="col-span-3 relative">
+              <Input
+                id="new-password"
+                type="password"
+                className={`w-full ${newPassword.length > 0 && newPassword.length !== 8 ? "border-red-500" : ""}`}
+                placeholder="Digite sua nova senha (8 caracteres)"
+                value={newPassword}
+                onChange={(e) => handlePasswordChange(e, setNewPassword)}
+                disabled={isLoading}
+                maxLength={8}
+              />
+              
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="confirm-password" className="text-end">
               Confirmar Senha
             </Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              className="col-span-3"
-              placeholder="Confirme sua nova senha"
-              value={confirmPassword}
-              maxLength={8}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={isLoading}
-            />
+            <div className="col-span-3 relative">
+              <Input
+                id="confirm-password"
+                type="password"
+                className={`w-full ${isPasswordMismatch ? "border-red-500" : ""}`}
+                placeholder="Confirme sua nova senha (8 caracteres)"
+                value={confirmPassword}
+                onChange={(e) => handlePasswordChange(e, setConfirmPassword)}
+                disabled={isLoading}
+                maxLength={8}
+              />
+              
+            </div>
           </div>
         </div>
         <hr />
 
-        {(newPassword.length !== 0 && newPassword.length !== 8 || (confirmPassword.length !== 0 && isPasswordMismatch)) && (
+        {(newPassword.length > 0 && newPassword.length !== 8) && (
           <div className="flex items-center gap-2 text-[0.8rem] text-red-600">
             <BadgeAlert size={16} />
-            <span>
-              {newPassword.length !== 0 && newPassword.length !== 8
-                ? "A senha precisa ter 8 caracteres."
-                : "As senhas não coincidem."}
-            </span>
+            <span>A senha precisa ter exatamente 8 caracteres.</span>
+          </div>
+        )}
+
+        {isPasswordMismatch && (
+          <div className="flex items-center gap-2 text-[0.8rem] text-red-600">
+            <BadgeAlert size={16} />
+            <span>As senhas não coincidem.</span>
           </div>
         )}
 

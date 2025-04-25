@@ -13,7 +13,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { Home } from "./components/pages/Home";
-import { LoginForm } from "./components/login/LoginForm";
+import { LoginForm } from "./components/auth/LoginForm";
 import { Toaster } from "sonner"; // Importando Toaster para exibir notificações
 import { ThemeProvider } from "./components/Dark-Mode/ThemeProvider";
 import { ModeToggle } from "./components/Dark-Mode/ModeToggle";
@@ -142,25 +142,30 @@ function AuthenticatedLayout({
       onLogout();
       navigate("/login");
     }
-
-    // You could also add token validation logic here if your token contains expiration info
   }, [location.pathname, onLogout, navigate]);
 
   return (
     <SidebarProvider>
-      <NavegationMenu
-        onLogout={() => {
-          onLogout();
-          localStorage.removeItem("token");
-          navigate("/login");
-        }}
-        authData={authData}
-      />
-      <main className="w-full h-full">
-        <SidebarTrigger />
-        <ModeToggle />
-        {children}
-      </main>
+      <div className="flex h-screen w-full overflow-hidden">
+        <NavegationMenu
+          onLogout={() => {
+            onLogout();
+            localStorage.removeItem("token");
+            navigate("/login");
+          }}
+          authData={authData}
+          
+        />
+        <main className="flex-1 relative overflow-auto transition-all duration-300 ease-in-out">
+          <div className="sticky top-0 z-20 flex justify-between items-center p-2 bg-background/80 backdrop-blur-sm">
+            <SidebarTrigger />
+            <ModeToggle />
+          </div>
+          <div className="p-2">
+            {children}
+          </div>
+        </main>
+      </div>
     </SidebarProvider>
   );
 }
