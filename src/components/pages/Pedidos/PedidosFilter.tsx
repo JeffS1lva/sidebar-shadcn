@@ -47,9 +47,15 @@ interface PedidosFilterProps {
     start: Date | undefined;
     end: Date | undefined;
   }) => void;
-  fetchPedidosWithDateRange: (startDate: Date, endDate: Date) => Promise<void>;
+  fetchPedidosWithDateRange: (
+    startDate: Date, 
+    endDate: Date, 
+    formattedRange?: {
+      start: string;
+      end: string;
+    }
+  ) => Promise<void>;
 }
-
 export const PedidosFilter = ({
   searchType,
   setSearchType,
@@ -92,11 +98,29 @@ export const PedidosFilter = ({
   // Aplicar filtro de data personalizado
   const handleApplyDateFilter = () => {
     if (dateFrom && dateTo) {
+      // Formatando as datas no formato YYYY-MM-DD esperado pela função filterFn
+      const formatDateToString = (date: Date): string => {
+        const year = date.getFullYear();
+        // Adicionar zero à esquerda se mês/dia for menor que 10
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+  
+      // Configurando o intervalo de datas formatado corretamente
+      const formattedDateRange = {
+        start: formatDateToString(dateFrom),
+        end: formatDateToString(dateTo)
+      };
+  
+      // Definindo o intervalo de datas ativo para o componente
       setActiveDateRange({
         start: dateFrom,
         end: dateTo,
       });
-      fetchPedidosWithDateRange(dateFrom, dateTo);
+  
+      // Chamada com as datas formatadas como strings
+      fetchPedidosWithDateRange(dateFrom, dateTo, formattedDateRange);
     }
   };
 
@@ -127,8 +151,6 @@ export const PedidosFilter = ({
 
   return (
     <div className="space-y-4">
-      {/* Componente de Filtro por Período */}
-
       {/* Componente de Filtro por Tipo */}
       <div className="flex flex-col space-y-4 py-2">
         <div className="flex items-start space-x-2">
@@ -186,7 +208,6 @@ export const PedidosFilter = ({
             </div>
           )}
           
-
           {/* Seletor de tipo de busca */}
           <Select
             value={searchType}

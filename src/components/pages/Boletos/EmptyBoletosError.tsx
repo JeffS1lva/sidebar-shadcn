@@ -1,5 +1,4 @@
 import { ClipboardX, RefreshCw, ArrowLeft, PackageSearch } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import LogoDark from "@/assets/logo.png";
 import LogoLight from "@/assets/logoBranco.png";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ThemeAwareLogo = () => {
   return (

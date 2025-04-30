@@ -79,7 +79,6 @@ const isTokenExpired = (token: string): boolean => {
     const currentTime = Date.now() / 1000;
     return decoded.exp < currentTime;
   } catch (error) {
-    console.error("Erro ao decodificar token:", error);
     return true;
   }
 };
@@ -257,7 +256,6 @@ export const Pedidos: React.FC = () => {
                 URL.revokeObjectURL(fileUrl);
               });
           } catch (error) {
-            console.error("Erro ao exibir pedido de venda:", error);
             const loadingId = `loading-pedido-${numeroPedido}`;
             document.getElementById(loadingId)?.remove();
 
@@ -313,79 +311,105 @@ export const Pedidos: React.FC = () => {
         );
       },
     },
-
     {
       accessorKey: "dataLancamentoPedido",
       header: "Data Lanç.",
       cell: ({ row }) => {
-        const dateString = row.getValue("dataLancamentoPedido");
-        if (!dateString) return "";
+        const dateValue = row.getValue("dataLancamentoPedido");
+        if (!dateValue) return "";
         // Usar split para preservar a data exata sem ajuste de timezone
-        const [year, month, day] = (dateString as string).split("-");
+        const dateString = String(dateValue);
+        const [year, month, day] = dateString.split("-");
         return `${day}/${month}/${year}`; // Formato DD/MM/YYYY
       },
       filterFn: (row, columnId, filterValue) => {
+        // Se não temos valores de filtro, mostrar todos os resultados
         if (!filterValue?.start || !filterValue?.end) return true;
-        const dateString = row.getValue(columnId);
-        if (!dateString) return false;
-        // Extrai dia, mês e ano diretamente da string (assumindo formato "YYYY-MM-DD")
-        const [year, month, day] = (dateString as string)
+        
+        const dateValue = row.getValue(columnId);
+        if (!dateValue) return false;
+        
+        // Garantir que estamos trabalhando com uma string
+        const dateString = String(dateValue);
+        
+        // Parse direto da string de data no formato YYYY-MM-DD
+        const [cellYear, cellMonth, cellDay] = dateString
           .split("-")
           .map(Number);
-
-        // Cria a data UTC (sem fuso horário local)
-        const cellDate = new Date(Date.UTC(year, month - 1, day));
-
-        // Processa as datas de filtro da mesma forma
+        
+        // Parse direto das strings de filtro no formato YYYY-MM-DD
         const [startYear, startMonth, startDay] = filterValue.start
           .split("-")
           .map(Number);
-        const startDate = new Date(
-          Date.UTC(startYear, startMonth - 1, startDay)
-        );
-
+        
         const [endYear, endMonth, endDay] = filterValue.end
           .split("-")
           .map(Number);
-        const endDate = new Date(
-          Date.UTC(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
-        );
-        return cellDate >= startDate && cellDate <= endDate;
+        
+        // Verificar se a data da célula está entre as datas de filtro
+        // YYYY comparação
+        if (cellYear < startYear || cellYear > endYear) return false;
+        
+        // Mesmo ano, verificar mês
+        if (cellYear === startYear && cellMonth < startMonth) return false;
+        if (cellYear === endYear && cellMonth > endMonth) return false;
+        
+        // Mesmo ano e mês, verificar dia
+        if (cellYear === startYear && cellMonth === startMonth && cellDay < startDay) return false;
+        if (cellYear === endYear && cellMonth === endMonth && cellDay > endDay) return false;
+        
+        return true;
       },
     },
     {
       accessorKey: "dataParaEntrega",
       header: "Data Entre.",
       cell: ({ row }) => {
-        const dateString = row.getValue("dataParaEntrega");
-        if (!dateString) return "";
-        // Usar split para preservar a data exata sem ajuste de timezone
-        const [year, month, day] = (dateString as string).split("-");
+        const dateValue = row.getValue("dataParaEntrega");
+        if (!dateValue) return "";
+        
+        // Garantir que estamos trabalhando com uma string
+        const dateString = String(dateValue);
+        const [year, month, day] = dateString.split("-");
         return `${day}/${month}/${year}`; // Formato DD/MM/YYYY
       },
       filterFn: (row, columnId, filterValue) => {
+        // Se não temos valores de filtro, mostrar todos os resultados
         if (!filterValue?.start || !filterValue?.end) return true;
-        const dateString = row.getValue(columnId);
-        if (!dateString) return false;
-        const [year, month, day] = (dateString as string)
+        
+        const dateValue = row.getValue(columnId);
+        if (!dateValue) return false;
+        
+        // Garantir que estamos trabalhando com uma string
+        const dateString = String(dateValue);
+        
+        // Parse direto da string de data no formato YYYY-MM-DD
+        const [cellYear, cellMonth, cellDay] = dateString
           .split("-")
           .map(Number);
-        const cellDate = new Date(Date.UTC(year, month - 1, day));
-
+        
+        // Parse direto das strings de filtro no formato YYYY-MM-DD
         const [startYear, startMonth, startDay] = filterValue.start
           .split("-")
           .map(Number);
-        const startDate = new Date(
-          Date.UTC(startYear, startMonth - 1, startDay)
-        );
-
+        
         const [endYear, endMonth, endDay] = filterValue.end
           .split("-")
           .map(Number);
-        const endDate = new Date(
-          Date.UTC(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
-        );
-        return cellDate >= startDate && cellDate <= endDate;
+        
+        // Verificar se a data da célula está entre as datas de filtro
+        // YYYY comparação
+        if (cellYear < startYear || cellYear > endYear) return false;
+        
+        // Mesmo ano, verificar mês
+        if (cellYear === startYear && cellMonth < startMonth) return false;
+        if (cellYear === endYear && cellMonth > endMonth) return false;
+        
+        // Mesmo ano e mês, verificar dia
+        if (cellYear === startYear && cellMonth === startMonth && cellDay < startDay) return false;
+        if (cellYear === endYear && cellMonth === endMonth && cellDay > endDay) return false;
+        
+        return true;
       },
     },
     {
@@ -476,7 +500,6 @@ export const Pedidos: React.FC = () => {
               },
             });
           } catch (error) {
-            console.error("Erro ao baixar XML:", error);
             toast.error("Erro ao baixar XML", {
               description: "Verifique os dados da nota ou tente novamente.",
               style: {
@@ -531,7 +554,6 @@ export const Pedidos: React.FC = () => {
 
             const contentType = response.headers["content-type"];
             if (!contentType || !contentType.includes("application/pdf")) {
-              console.error("Resposta não é um PDF:", contentType);
               throw new Error("Resposta não é um PDF válido");
             }
 
@@ -578,7 +600,6 @@ export const Pedidos: React.FC = () => {
                 URL.revokeObjectURL(fileUrl);
               });
           } catch (error) {
-            console.error("Erro ao exibir DANFE:", error);
             const loadingId = `loading-danfe-${notaFiscal.toString()}`;
             document.getElementById(loadingId)?.remove();
 
@@ -668,7 +689,6 @@ export const Pedidos: React.FC = () => {
           className="whitespace-nowrap overflow-hidden text-ellipsis flex w-56"
           title={row.getValue("nomeCliente")}
         >
-          
           {row.getValue("nomeCliente")}
         </div>
       ),
@@ -684,7 +704,7 @@ export const Pedidos: React.FC = () => {
       cell: ({ row }) => {
         const nome: string | null = row.getValue("nomeTransportadora");
         if (!nome) return <>-</>;
-        
+
         const displayName = nome.length > 10 ? `${nome.slice(0, 23)}...` : nome;
         return <>{displayName}</>;
       },
@@ -721,22 +741,25 @@ export const Pedidos: React.FC = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-
+  
       if (!token) {
         navigate("/login");
         return;
       }
-
+  
       // Guardar as datas atuais de filtro
       setActiveDateRange({
         start: startDate,
         end: endDate,
       });
-
+  
+      // Formatar data para API no padrão YYYY-MM-DD
       const formatarDataAPI = (date: Date) => {
+        // Usar format diretamente para evitar problemas de timezone
         return format(date, "yyyy-MM-dd");
       };
-
+  
+      // Datas ajustadas para garantir inclusão do dia completo
       const response = await axios.get(
         "/api/external/Pedidos/consultar-pedidos",
         {
@@ -749,12 +772,12 @@ export const Pedidos: React.FC = () => {
           },
         }
       );
-
+  
       let pedidosData =
         response.data.value || response.data.data || response.data;
-
+  
       if (Array.isArray(pedidosData)) {
-        // Ordenação decrescente por dataLancamentoPedido
+        // Remover duplicatas por numeroPedido
         const uniquePedidos = pedidosData.reduce((acc, current) => {
           const isDuplicate = acc.find(
             (item: { numeroPedido: any }) =>
@@ -765,7 +788,7 @@ export const Pedidos: React.FC = () => {
           }
           return acc;
         }, []);
-
+  
         // Ordenação decrescente
         uniquePedidos.sort(
           (
@@ -773,32 +796,34 @@ export const Pedidos: React.FC = () => {
             b: { dataLancamentoPedido: string | number | Date }
           ) => {
             if (!a.dataLancamentoPedido || !b.dataLancamentoPedido) {
-              console.warn("Campo dataLancamentoPedido não encontrado em:", {
-                a,
-                b,
-              });
               return 0;
             }
-
-            const dataA = new Date(a.dataLancamentoPedido).getTime();
-            const dataB = new Date(b.dataLancamentoPedido).getTime();
-
+  
+            // Garantir que estamos trabalhando com strings antes de usar split
+            const dataStrA = String(a.dataLancamentoPedido);
+            const dataStrB = String(b.dataLancamentoPedido);
+  
+            // Criar objeto Date usando split para evitar problemas de timezone
+            const [yearA, monthA, dayA] = dataStrA.split('-');
+            const [yearB, monthB, dayB] = dataStrB.split('-');
+            
+            const dataA = new Date(Number(yearA), Number(monthA) - 1, Number(dayA)).getTime();
+            const dataB = new Date(Number(yearB), Number(monthB) - 1, Number(dayB)).getTime();
+  
             return dataB - dataA; // Ordem decrescente
           }
         );
-
+  
         setAllPedidos(uniquePedidos);
         setPedidos(uniquePedidos);
       } else {
-        console.error("Estrutura de dados inesperada:", response.data);
         setAllPedidos([]);
         setPedidos([]);
-        setError("empty")
+        setError("empty");
       }
-
+  
       setError(null);
     } catch (err) {
-      console.error("Erro ao buscar pedidos:", err);
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         localStorage.removeItem("token");
         navigate("/login");
@@ -809,13 +834,16 @@ export const Pedidos: React.FC = () => {
       setLoading(false);
     }
   };
-
+  
   // Função para aplicar o filtro de período selecionado
   const applyPeriodFilter = (periodFilter: PeriodFilter) => {
     setCurrentPeriodFilter(periodFilter);
-
+  
+    // Criar uma nova data no timezone local
     const hoje = new Date();
-
+    // Padronizamos para o início do dia (00:00:00)
+    hoje.setHours(0, 0, 0, 0);
+  
     switch (periodFilter) {
       case "todos":
         // Buscar todos os pedidos dos últimos 2 anos
@@ -839,7 +867,6 @@ export const Pedidos: React.FC = () => {
         break;
     }
   };
-
   // Na primeira renderização, busca os dados do último mês (modificado de 90 dias para 1 mês)
   React.useEffect(() => {
     applyPeriodFilter("ultimoMes");
@@ -858,12 +885,12 @@ export const Pedidos: React.FC = () => {
   const handleBack = () => {
     navigate("/inicio"); // ou qualquer outra rota conforme a estrutura da sua aplicação
   };
-  
+
   // Adicione função para tentar novamente
   const handleRetry = () => {
     // Tenta buscar os pedidos novamente usando o mesmo intervalo de datas
     fetchPedidosWithDateRange(
-      activeDateRange.start || new Date(), 
+      activeDateRange.start || new Date(),
       activeDateRange.end || new Date()
     );
   };
@@ -876,11 +903,10 @@ export const Pedidos: React.FC = () => {
       </div>
     );
   }
-  
 
   if (error === "empty") {
     return (
-      <EmptyPedidosError 
+      <EmptyPedidosError
         message="Não foram encontrados pedidos para o período selecionado."
         onRetry={handleRetry}
         onBack={handleBack}
@@ -889,10 +915,10 @@ export const Pedidos: React.FC = () => {
       />
     );
   }
-  
+
   if (error === "error") {
     return (
-      <EmptyPedidosError 
+      <EmptyPedidosError
         message="Ocorreu um erro ao carregar os pedidos. Por favor, tente novamente."
         onRetry={handleRetry}
         onBack={handleBack}

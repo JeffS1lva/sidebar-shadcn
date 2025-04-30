@@ -8,6 +8,7 @@ import {
   User2,
   LogOut,
   Landmark,
+  EditIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,6 +33,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Button } from "../ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ResetPassword } from "../auth/ResetPassword";
+import { ProfileSelector } from "./NavegationMenu/ProfileSelector"; // Importando o novo componente
+
+// Função utilitária para obter a chave do localStorage
+const getUserStorageKey = (email: string) => `userProfile_${email}`;
 
 // Componente de logo que muda com o tema
 const ThemeAwareLogo = () => {
@@ -89,10 +94,38 @@ export function NavegationMenu({
   const [userEmail, setUserEmail] = useState("users@test.com");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isResetPasswordOpen, setResetPasswordOpen] = useState(false);
+  const [isUserProfileOpen, setUserProfileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  // Carregar os dados do usuário do localStorage e da prop authData
+  const loadUserData = () => {
+    if (authData?.email) {
+      const storageKey = getUserStorageKey(authData.email);
+      const storedUserData = localStorage.getItem(storageKey);
+      
+      if (storedUserData) {
+        try {
+          const userData = JSON.parse(storedUserData);
+          setUserLogin(userData.name);
+          setAvatarUrl(userData.avatarUrl);
+        } catch (error) {
+          
+          // Fallback para dados do authData
+          setDefaultUserData();
+        }
+      } else {
+        // Se não existir dados no localStorage, use os dados do authData
+        setDefaultUserData();
+      }
+      
+      // Sempre atualizar o email do usuário
+      setUserEmail(authData.email || "default@example.com");
+    }
+  };
+  
+  // Configurar dados padrão baseados no authData
+  const setDefaultUserData = () => {
     if (authData) {
       if (authData.firstName && authData.lastName) {
         setUserLogin(`${authData.firstName} ${authData.lastName}`);
@@ -101,9 +134,35 @@ export function NavegationMenu({
       } else if (authData.login) {
         setUserLogin(authData.login);
       }
-      setUserEmail(authData.email || "default@example.com");
-      setAvatarUrl(authData.avatarUrl || null);
+      
+      if (authData.avatarUrl) {
+        setAvatarUrl(authData.avatarUrl);
+      }
     }
+  };
+
+  // Carregar os dados do usuário ao iniciar o componente
+  useEffect(() => {
+    loadUserData();
+    
+    // Ouvir por atualizações de perfil
+    const handleProfileUpdate = (event: CustomEvent) => {
+      const { email, name, avatarUrl } = event.detail;
+      
+      // Só atualizar se for o email atual
+      if (email === authData?.email) {
+        setUserLogin(name);
+        setAvatarUrl(avatarUrl);
+      }
+    };
+    
+    // Adicionar event listener para atualizações de perfil
+    window.addEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    };
   }, [authData]);
 
   const handleLogout = async () => {
@@ -128,7 +187,6 @@ export function NavegationMenu({
       
       navigate("/login");
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
     } finally {
       setIsLoggingOut(false);
     }
@@ -138,6 +196,45 @@ export function NavegationMenu({
     setResetPasswordOpen(true);
   };
 
+  const openUserProfileModal = () => {
+    setUserProfileOpen(true);
+  };
+
+  const closeUserProfileModal = () => {
+    setUserProfileOpen(false);
+  };
+
+  const handleSaveUserChanges = async (userData: {
+    name: string;
+    avatarUrl: string | null;
+  }) => {
+    try {
+      // Aqui você faria uma requisição para a API para salvar as alterações
+      // Por enquanto vamos simular uma chamada de API bem-sucedida
+      
+      // Atualizar estados locais
+      setUserLogin(userData.name);
+      setAvatarUrl(userData.avatarUrl);
+      
+      // Salvar no localStorage para persistência
+      if (authData?.email) {
+        const storageKey = getUserStorageKey(authData.email);
+        localStorage.setItem(storageKey, JSON.stringify({
+          name: userData.name,
+          avatarUrl: userData.avatarUrl
+        }));
+      }
+      
+      // Simular um atraso de rede
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      return true; // Sucesso
+    } catch (error) {
+      return false; // Falha
+    }
+  };
+
+  // Fechar o modal de redefinição de senha
   const closeModal = () => {
     setResetPasswordOpen(false);
   };
@@ -180,9 +277,13 @@ export function NavegationMenu({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     side="left"
-                    className="w-56 flex flex-col text-black dark:text-white gap-2 bg-gray-100 dark:bg-card border-1 border-gray-500 rounded-sm mb-3 px-1 py-1 cursor-pointer ml-4"
+                    className="w-56 flex flex-col text-black dark:text-white gap-2 bg-gray-100 dark:bg-card border-1 border-gray-500 rounded-sm mb-3 px-1 py-1 ml-4"
                   >
-                    <DropdownMenuItem className="flex items-center gap-2 pl-2 pt-1 outline-0 hover:bg-zinc-200 dark:hover:bg-sidebar-accent hover:rounded-md py-0.5">
+                    {/* Item de perfil com clique para abrir o modal */}
+                    <DropdownMenuItem 
+                      className="flex items-center gap-2 pl-2 pt-1 outline-0 hover:bg-zinc-200 dark:hover:bg-sidebar-accent hover:rounded-md py-0.5"
+                      onClick={openUserProfileModal} // Aqui adicionamos o handler para abrir o modal
+                    >
                       <div className="h-9 w-9 overflow-hidden rounded-sm">
                         <Avatar className="h-full w-full">
                           {avatarUrl ? (
@@ -199,22 +300,22 @@ export function NavegationMenu({
                         </Avatar>
                       </div>
                       <div className="flex flex-col">
-                        <span>{userLogin || "Usuário Desconhecido"}</span>
-                        <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                          {userEmail}
-                        </span>
+                        <span className="text-lg">{userLogin || "Usuário Desconhecido"}</span>
+                        <a className="flex items-center gap-1 text-[12px] text-zinc-700 dark:text-zinc-400 dark:hover:text-sky-700 hover:text-sky-950  rounded-sm cursor-pointer">
+                          Editar Perfil <EditIcon size={15}/>
+                        </a>
                       </div>
                     </DropdownMenuItem>
                     <div className="border w-full border-zinc-300 dark:border-zinc-600"></div>
                     <DropdownMenuItem
-                      className="flex items-center gap-2 pl-3 outline-0 hover:bg-zinc-200 dark:hover:bg-sidebar-accent  hover:rounded-md py-2"
+                      className="flex items-center gap-2 pl-3 outline-0 hover:bg-zinc-200 dark:hover:bg-sidebar-accent hover:rounded-md py-2 cursor-pointer"
                       onClick={handlePasswordReset}
                     >
                       <Settings size={16} />
                       Alterar senha
                     </DropdownMenuItem>
                     <div className="border w-full border-zinc-300 dark:border-zinc-600"></div>
-                    <DropdownMenuItem className="flex justify pt-1 gap-2 pb-1 outline-0 hover:bg-zinc-200 dark:hover:bg-sidebar-accent  hover:rounded-md py-0.5" >
+                    <DropdownMenuItem className="flex justify pt-1 gap-2 pb-1 outline-0 hover:bg-zinc-200 dark:hover:bg-sidebar-accent hover:rounded-md py-0.5" >
                       <Button 
                         variant={"bottomSide"} 
                         onClick={handleLogout}
@@ -233,7 +334,20 @@ export function NavegationMenu({
         </SidebarContent>
       </Sidebar>
 
+      {/* Modal de Redefinição de Senha */}
       {isResetPasswordOpen && <ResetPassword closeModal={closeModal} />}
+      
+      {/* Modal de Perfil do Usuário */}
+      <ProfileSelector
+        isOpen={isUserProfileOpen}
+        onClose={closeUserProfileModal}
+        currentUser={{
+          name: userLogin,
+          email: userEmail,
+          avatarUrl: avatarUrl
+        }}
+        onSaveChanges={handleSaveUserChanges}
+      />
     </>
   );
 }

@@ -39,7 +39,6 @@ const isTokenExpired = (token: string): boolean => {
     const expirationTime = payload.exp * 1000; // Converte para milissegundos
     return Date.now() > expirationTime;
   } catch (error) {
-    console.error("Erro ao verificar token:", error);
     return true; // Em caso de erro, considerar o token como expirado
   }
 };
@@ -83,7 +82,6 @@ export const Boletos: React.FC = () => {
     });
   };
 
-  
   const formatCNPJ = (cnpj: string): string => {
     if (!cnpj || cnpj.length !== 14) return cnpj;
     return cnpj.replace(
@@ -201,9 +199,7 @@ export const Boletos: React.FC = () => {
             const parcelaId = String(id);
             const loadingId = `loading-boleto-${boletoId}`;
 
-            console.log(
-              `Tentando acessar boleto: ID=${boletoId}, ParcelaID=${parcelaId}`
-            );
+           
 
             // Remover qualquer visualizador existente para evitar duplicações
             const existingViewer = document.getElementById(
@@ -228,7 +224,6 @@ export const Boletos: React.FC = () => {
 
             const apiUrl = `/api/external/Boletos/${boletoId}/pdf`;
 
-            console.log(`Fazendo requisição para: ${apiUrl}`);
 
             try {
               // Configurar cabeçalhos de depuração
@@ -237,19 +232,11 @@ export const Boletos: React.FC = () => {
                 Accept: "application/pdf, application/octet-stream", // Aceitar diferentes tipos de conteúdo
               };
 
-              console.log("Headers da requisição:", headers);
 
               const response = await axios.get(apiUrl, {
                 headers,
                 responseType: "blob",
               });
-
-              console.log("Resposta recebida:", response.status);
-              console.log("Content-Type:", response.headers["content-type"]);
-              console.log(
-                "Content-Length:",
-                response.headers["content-length"]
-              );
 
               // Remover o loading
               const loadingElement = document.getElementById(loadingId);
@@ -268,11 +255,8 @@ export const Boletos: React.FC = () => {
                   : contentType,
               });
 
-              console.log("Blob criado:", blob.size, "bytes, tipo:", blob.type);
-
               // Criar objeto URL para uso no iframe e download
               const fileUrl = URL.createObjectURL(blob);
-              console.log("URL do blob:", fileUrl);
 
               // Criar container do visualizador
               const viewerContainer = document.createElement("div");
@@ -320,11 +304,9 @@ export const Boletos: React.FC = () => {
 
                 // Monitorar carregamento
                 iframe.onload = () =>
-                  console.log("iframe carregado com sucesso");
-                iframe.onerror = (err) => {
-                  console.error("Erro ao carregar iframe:", err);
-                  // Adicionar mensagem de erro no container
-                  iframeContainer.innerHTML += `
+                  (iframe.onerror = () => {
+                    // Adicionar mensagem de erro no container
+                    iframeContainer.innerHTML += `
                     <div class="absolute inset-0 flex items-center justify-center dark:bg-gray-800/80">
                       <div class="dark:bg-gray-900 p-4 rounded shadow-md text-center">
                         <p class="text-red-400 font-medium">Erro ao exibir o PDF</p>
@@ -332,10 +314,9 @@ export const Boletos: React.FC = () => {
                       </div>
                     </div>
                   `;
-                };
+                  });
 
                 iframeContainer.appendChild(iframe);
-                console.log("iframe adicionado ao container");
               }
 
               // Adicionar evento de fechamento
@@ -351,16 +332,12 @@ export const Boletos: React.FC = () => {
                   URL.revokeObjectURL(fileUrl);
                 });
             } catch (error) {
-              console.error("Erro na requisição axios:", error);
-
               // Remover loading
               document.getElementById(loadingId)?.remove();
 
               // Mostrar erro específico com base na resposta
               if (axios.isAxiosError(error)) {
                 const status = error.response?.status;
-                console.log("Erro HTTP:", status);
-                console.log("Resposta de erro:", error.response?.data);
 
                 if (status === 404) {
                   toast.error("Boleto não encontrado", {
@@ -390,7 +367,6 @@ export const Boletos: React.FC = () => {
               }
             }
           } catch (error) {
-            console.error("Erro geral ao exibir boleto:", error);
             const loadingId = `loading-boleto-${
               hasCodigoBoleto ? String(codigoBoleto) : "-"
             }`;
@@ -540,7 +516,7 @@ export const Boletos: React.FC = () => {
             break;
           case "gerado":
           case "confirmado":
-          case "remessa":  // Adicionado o caso para "remessa"
+          case "remessa": // Adicionado o caso para "remessa"
             statusColor =
               "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200";
             statusLabel = "Pendente";
@@ -727,7 +703,7 @@ export const Boletos: React.FC = () => {
         } else if (
           status?.toLowerCase() === "gerado" ||
           status?.toLowerCase() === "confirmado" ||
-          status?.toLowerCase() === "remessa"  // Adicionado o caso para "remessa" aqui também
+          status?.toLowerCase() === "remessa" // Adicionado o caso para "remessa" aqui também
         ) {
           // Se for "gerado", "confirmado" ou "remessa", mostrar "aguardando pagamento"
           return <span className="text-zinc-400">Aguardando pagamento</span>;
@@ -844,7 +820,6 @@ export const Boletos: React.FC = () => {
 
       // Extrair os dados da resposta, considerando diferentes estruturas possíveis
       let parcelasData = [];
-      console.log(response);
       if (response.data && Array.isArray(response.data.parcelas)) {
         parcelasData = response.data.parcelas;
       } else if (Array.isArray(response.data.value)) {
@@ -889,13 +864,11 @@ export const Boletos: React.FC = () => {
           }
         }
       } else {
-        console.error("Estrutura de dados inesperada:", response.data);
         setParcelas([]);
         setAllParcelas([]);
         setError("Formato de dados recebido é inválido");
       }
     } catch (err) {
-      console.error("Erro ao buscar parcelas:", err);
 
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 401) {
@@ -941,46 +914,46 @@ export const Boletos: React.FC = () => {
   }, [searchValue, searchType, table, debouncedSearchValue]);
 
   const handleBack = () => {
-      navigate("/inicio"); // ou qualquer outra rota conforme a estrutura da sua aplicação
-    };
-  
-    const handleRetry = () => {
-      // Tenta buscar os boletos novamente usando o mesmo intervalo de datas
-      fetchParcelas();
-    };
-  
-    // Handler para filtros de data
-  
-    if (loading) {
-      return (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="ml-4">Carregando boletos...</p>
-        </div>
-      );
-    }
-  
-    if (error === "empty") {
-      return (
-        <EmptyBoletosError
-          alertMessage="Não foram encontrados boletos."
-          onRetry={handleRetry}
-          onBack={handleBack}
-          showBackButton={true}
-        />
-      );
-    }
-  
-    if (error === "error") {
-      return (
-        <EmptyBoletosError
-          alertMessage="Ocorreu um erro ao carregar os boletos. Por favor, tente novamente."
-          onRetry={handleRetry}
-          onBack={handleBack}
-          showBackButton={true}
-        />
-      );
-    }
+    navigate("/inicio"); // ou qualquer outra rota conforme a estrutura da sua aplicação
+  };
+
+  const handleRetry = () => {
+    // Tenta buscar os boletos novamente usando o mesmo intervalo de datas
+    fetchParcelas();
+  };
+
+  // Handler para filtros de data
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <p className="ml-4">Carregando boletos...</p>
+      </div>
+    );
+  }
+
+  if (error === "empty") {
+    return (
+      <EmptyBoletosError
+        alertMessage="Não foram encontrados boletos."
+        onRetry={handleRetry}
+        onBack={handleBack}
+        showBackButton={true}
+      />
+    );
+  }
+
+  if (error === "error") {
+    return (
+      <EmptyBoletosError
+        alertMessage="Ocorreu um erro ao carregar os boletos. Por favor, tente novamente."
+        onRetry={handleRetry}
+        onBack={handleBack}
+        showBackButton={true}
+      />
+    );
+  }
 
   // Componente de paginação modificado para usar o estado currentPage
   const handlePageChange = (page: number) => {

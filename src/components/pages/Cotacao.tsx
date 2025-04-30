@@ -66,7 +66,6 @@ const isTokenExpired = (token: string): boolean => {
     const currentTime = Date.now() / 1000;
     return decoded.exp < currentTime;
   } catch (error) {
-    console.error("Erro ao decodificar token:", error);
     return true;
   }
 };
@@ -236,7 +235,6 @@ export function Cotacao() {
                 URL.revokeObjectURL(fileUrl);
               });
           } catch (error) {
-            console.error("Erro ao exibir cotação:", error);
             const loadingId = `loading-cotacao-${cotacaoId}`;
             document.getElementById(loadingId)?.remove();
 
@@ -490,14 +488,12 @@ export function Cotacao() {
         setAllCotacoes(uniqueCotacoes);
         setCotacoes(uniqueCotacoes);
       } else {
-        console.error("Estrutura de dados inesperada:", response.data);
         setAllCotacoes([]);
         setCotacoes([]);
       }
 
       setError(null);
     } catch (err) {
-      console.error("Erro ao buscar cotações:", err);
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         localStorage.removeItem("token");
         navigate("/login");

@@ -83,12 +83,8 @@ export function Home() {
           resetCopyStates[type] = false;
           setCopyStates(resetCopyStates);
         }, 1500);
-
-        console.log(`Texto copiado!`);
       })
-      .catch((err) => {
-        console.error("Erro ao copiar: ", err);
-      });
+      .catch(() => {});
   };
 
   return (
@@ -131,12 +127,8 @@ export function Home() {
         {/* Container responsivo para controles do carousel - com z-index baixo e suporte para dark mode */}
         <div className="flex w-full relative z-0">
           <div className="flex gap-2 absolute left-0">
-            <CarouselPrevious 
-              className="h-8 w-8 static transform-none bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700" 
-            />
-            <CarouselNext 
-              className="h-8 w-8 static transform-none bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-            />
+            <CarouselPrevious className="h-8 w-8 static transform-none bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700" />
+            <CarouselNext className="h-8 w-8 static transform-none bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700" />
           </div>
 
           {/* Indicadores de pontos - centralizados em mobile, à direita em desktop - com suporte para dark mode */}
@@ -146,8 +138,8 @@ export function Home() {
                 key={index}
                 onClick={() => goToSlide(index)}
                 className={`w-3 h-3 rounded-full transition-colors cursor-pointer ${
-                  current === index 
-                    ? "bg-blue-600 dark:bg-blue-500" 
+                  current === index
+                    ? "bg-blue-600 dark:bg-blue-500"
                     : "bg-gray-300 dark:bg-gray-600"
                 }`}
                 aria-label={`Ir para slide ${index + 1}`}
@@ -164,7 +156,10 @@ export function Home() {
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           {/* Email (vendas20) */}
           <div className="flex items-center gap-1 bg-zinc-300 dark:bg-zinc-700 shadow-sm shadow-black dark:shadow-zinc-900 px-2 rounded-sm p-1 w-full sm:w-auto">
-            <Mail size={18} className="text-black dark:text-white flex-shrink-0" />
+            <Mail
+              size={18}
+              className="text-black dark:text-white flex-shrink-0"
+            />
             <a className="text-sm text-black dark:text-white truncate font-medium flex-grow">
               vendas20@polarfix.com.br
             </a>
@@ -176,9 +171,15 @@ export function Home() {
               title="Copiar email"
             >
               {copyStates.email ? (
-                <Check size={16} className="cursor-pointer text-zinc-600 dark:text-zinc-300" />
+                <Check
+                  size={16}
+                  className="cursor-pointer text-zinc-600 dark:text-zinc-300"
+                />
               ) : (
-                <Copy size={16} className="cursor-pointer text-zinc-900 dark:text-zinc-200" />
+                <Copy
+                  size={16}
+                  className="cursor-pointer text-zinc-900 dark:text-zinc-200"
+                />
               )}
             </button>
           </div>
@@ -187,7 +188,10 @@ export function Home() {
 
           {/* Telefone */}
           <div className="flex items-center gap-3 bg-zinc-300 dark:bg-zinc-700 shadow-sm shadow-black dark:shadow-zinc-900 px-2 rounded-sm p-1 w-full sm:w-auto">
-            <Phone size={18} className="text-black dark:text-white flex-shrink-0" />
+            <Phone
+              size={18}
+              className="text-black dark:text-white flex-shrink-0"
+            />
 
             <Select>
               <SelectTrigger
@@ -216,7 +220,10 @@ export function Home() {
                           className="cursor-pointer text-zinc-600 dark:text-zinc-300"
                         />
                       ) : (
-                        <Copy size={16} className="cursor-pointer text-zinc-900 dark:text-zinc-200" />
+                        <Copy
+                          size={16}
+                          className="cursor-pointer text-zinc-900 dark:text-zinc-200"
+                        />
                       )}
                     </button>
                   </div>
@@ -237,7 +244,10 @@ export function Home() {
                           className="cursor-pointer text-zinc-600 dark:text-zinc-300"
                         />
                       ) : (
-                        <Copy size={16} className="cursor-pointer text-zinc-900 dark:text-zinc-200" />
+                        <Copy
+                          size={16}
+                          className="cursor-pointer text-zinc-900 dark:text-zinc-200"
+                        />
                       )}
                     </button>
                   </div>

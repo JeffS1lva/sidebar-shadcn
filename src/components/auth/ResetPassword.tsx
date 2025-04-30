@@ -18,7 +18,10 @@ interface ResetPasswordProps {
   userEmail?: string; // Email do usuário atual
 }
 
-export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps) {
+export function ResetPassword({
+  closeModal,
+  userEmail = "",
+}: ResetPasswordProps) {
   const [currentPassword, setCurrentPassword] = useState<string>("");
   const [newPassword, setNewPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
@@ -57,37 +60,37 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
       });
       return;
     }
-    
+
     if (newPassword === confirmPassword && newPassword.length === 8) {
       try {
         setIsLoading(true);
-        
+
         // Definindo o payload de acordo com o formato esperado pela API
         const payload = {
           currentPassword,
           newPassword,
-          email
+          email,
         };
-        
+
         // Log para debug
-        console.log("Enviando requisição:", payload);
-        
-        const response = await fetch('/api/external/Auth/change-password', {
-          method: 'POST',
+
+        const response = await fetch("/api/external/Auth/change-password", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
-          credentials: 'include'
+          credentials: "include",
         });
 
         // Armazena a resposta para debug
         const responseData = await response.text();
         setApiResponse(responseData);
-        console.log("Resposta da API:", response.status, responseData);
 
         if (!response.ok) {
-          throw new Error(`Falha ao alterar a senha: ${response.status} - ${responseData}`);
+          throw new Error(
+            `Falha ao alterar a senha: ${response.status} - ${responseData}`
+          );
         }
 
         closeModal();
@@ -103,17 +106,22 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
         setNewPassword("");
         setConfirmPassword("");
       } catch (error) {
-        console.error("Erro ao redefinir senha:", error);
-        
         // Mensagem de erro mais informativa
-        toast.error(`Erro ao redefinir a senha: ${error instanceof Error ? error.message : 'Tente novamente mais tarde.'}`, {
-          style: {
-            backgroundColor: "white",
-            color: "red",
-            boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
-          },
-          duration: 5000,
-        });
+        toast.error(
+          `Erro ao redefinir a senha: ${
+            error instanceof Error
+              ? error.message
+              : "Tente novamente mais tarde."
+          }`,
+          {
+            style: {
+              backgroundColor: "white",
+              color: "red",
+              boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
+            },
+            duration: 5000,
+          }
+        );
       } finally {
         setIsLoading(false);
       }
@@ -137,8 +145,9 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
   };
 
   const isPasswordValid = newPassword.length === 8;
-  const isPasswordMismatch = newPassword !== confirmPassword && confirmPassword.length > 0;
-  const isButtonDisabled = 
+  const isPasswordMismatch =
+    newPassword !== confirmPassword && confirmPassword.length > 0;
+  const isButtonDisabled =
     !email ||
     currentPassword.length === 0 ||
     newPassword.length !== 8 ||
@@ -147,8 +156,12 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
     isLoading;
 
   // Determina o texto do botão com base no estado
-  const buttonText = isLoading ? "Processando..." : isButtonDisabled ? "Bloqueado" : "Salvar Alterações";
-  
+  const buttonText = isLoading
+    ? "Processando..."
+    : isButtonDisabled
+    ? "Bloqueado"
+    : "Salvar Alterações";
+
   // Determina a mensagem de título para o botão
   const getButtonTitle = () => {
     if (isLoading) {
@@ -218,14 +231,17 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
               <Input
                 id="new-password"
                 type="password"
-                className={`w-full ${newPassword.length > 0 && newPassword.length !== 8 ? "border-red-500" : ""}`}
+                className={`w-full ${
+                  newPassword.length > 0 && newPassword.length !== 8
+                    ? "border-red-500"
+                    : ""
+                }`}
                 placeholder="Digite sua nova senha (8 caracteres)"
                 value={newPassword}
                 onChange={(e) => handlePasswordChange(e, setNewPassword)}
                 disabled={isLoading}
                 maxLength={8}
               />
-              
             </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -236,20 +252,21 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
               <Input
                 id="confirm-password"
                 type="password"
-                className={`w-full ${isPasswordMismatch ? "border-red-500" : ""}`}
+                className={`w-full ${
+                  isPasswordMismatch ? "border-red-500" : ""
+                }`}
                 placeholder="Confirme sua nova senha (8 caracteres)"
                 value={confirmPassword}
                 onChange={(e) => handlePasswordChange(e, setConfirmPassword)}
                 disabled={isLoading}
                 maxLength={8}
               />
-              
             </div>
           </div>
         </div>
         <hr />
 
-        {(newPassword.length > 0 && newPassword.length !== 8) && (
+        {newPassword.length > 0 && newPassword.length !== 8 && (
           <div className="flex items-center gap-2 text-[0.8rem] text-red-600">
             <BadgeAlert size={16} />
             <span>A senha precisa ter exatamente 8 caracteres.</span>
@@ -263,12 +280,14 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
           </div>
         )}
 
-        {isPasswordValid && !isPasswordMismatch && confirmPassword.length > 0 && (
-          <div className="flex items-center gap-2 text-[0.8rem] text-green-600">
-            <BadgeCheck size={16} />
-            <span>A senha tem 8 caracteres.</span>
-          </div>
-        )}
+        {isPasswordValid &&
+          !isPasswordMismatch &&
+          confirmPassword.length > 0 && (
+            <div className="flex items-center gap-2 text-[0.8rem] text-green-600">
+              <BadgeCheck size={16} />
+              <span>A senha tem 8 caracteres.</span>
+            </div>
+          )}
 
         {apiResponse && (
           <div className="mt-2 text-sm text-gray-600 bg-gray-100 p-2 rounded overflow-auto max-h-24">
@@ -277,11 +296,7 @@ export function ResetPassword({ closeModal, userEmail = "" }: ResetPasswordProps
         )}
 
         <DialogFooter>
-          <Button 
-            type="button" 
-            onClick={closeModal}
-            disabled={isLoading}
-          >
+          <Button type="button" onClick={closeModal} disabled={isLoading}>
             Cancelar
           </Button>
           <Button
