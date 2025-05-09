@@ -8,6 +8,8 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
+
+  
   SelectLabel,
   SelectTrigger,
   SelectValue,
@@ -48,8 +50,8 @@ interface PedidosFilterProps {
     end: Date | undefined;
   }) => void;
   fetchPedidosWithDateRange: (
-    startDate: Date, 
-    endDate: Date, 
+    startDate: Date,
+    endDate: Date,
     formattedRange?: {
       start: string;
       end: string;
@@ -102,23 +104,23 @@ export const PedidosFilter = ({
       const formatDateToString = (date: Date): string => {
         const year = date.getFullYear();
         // Adicionar zero à esquerda se mês/dia for menor que 10
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       };
-  
+
       // Configurando o intervalo de datas formatado corretamente
       const formattedDateRange = {
         start: formatDateToString(dateFrom),
-        end: formatDateToString(dateTo)
+        end: formatDateToString(dateTo),
       };
-  
+
       // Definindo o intervalo de datas ativo para o componente
       setActiveDateRange({
         start: dateFrom,
         end: dateTo,
       });
-  
+
       // Chamada com as datas formatadas como strings
       fetchPedidosWithDateRange(dateFrom, dateTo, formattedDateRange);
     }
@@ -207,7 +209,7 @@ export const PedidosFilter = ({
               </Popover>
             </div>
           )}
-          
+
           {/* Seletor de tipo de busca */}
           <Select
             value={searchType}
@@ -216,7 +218,7 @@ export const PedidosFilter = ({
               setSearchValue("");
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] ">
               <SelectValue placeholder="Tipo de busca" />
             </SelectTrigger>
             <SelectContent>

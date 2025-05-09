@@ -16,11 +16,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Card,
+  
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CustomCard,
 } from "@/components/ui/card";
 import {
   Alert,
@@ -205,7 +206,7 @@ export function ProfileSelector({
               <DialogTitle className="text-xl">Gerenciar Perfil</DialogTitle>
             </DialogHeader>
             
-            <Card>
+            <CustomCard>
               <CardHeader>
                 <CardTitle>Informações do Perfil</CardTitle>
                 <CardDescription>
@@ -346,7 +347,7 @@ export function ProfileSelector({
                   )}
                 </div>
               </CardContent>
-            </Card>
+            </CustomCard>
             
             <DialogFooter className="mt-4 gap-2">
               {isEditing ? (

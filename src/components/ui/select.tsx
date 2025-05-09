@@ -31,12 +31,12 @@ function SelectTrigger({
   variant?: "default" | "secondary" // Adicione os tipos de variantes que você precisa
 }) {
   // Classes base que serão aplicadas a todas as variantes
-  const baseStyles = "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive flex h-9 w-fit items-center justify-between gap-2 rounded-md border-1 bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 ";
+  const baseStyles = "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive flex h-9 w-fit items-center justify-between gap-2 rounded-md border-1 bg-primary px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 ";
   
   // Estilos específicos para cada variante
   const variantStyles = {
-    default: "",
-    secondary: "border-none data-[placeholder]:text-zinc-700  cursor-pointer dark:data-[placeholder]:text-zinc-400 "
+    default: "bg-transparent",
+    secondary: "border-none data-[placeholder]:text-primary-foreground  cursor-pointer dark:data-[placeholder]:text-zinc-400 dark:bg-zinc-700 "
     // Adicione mais variantes conforme necessário
   };
   
@@ -68,12 +68,12 @@ function SelectContent({
   variant?: "default" | "secondary" // Adicione os tipos de variantes que você precisa
 }) {
   // Classes base que serão aplicadas a todas as variantes
-  const baseStyles = "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border shadow-md mt-2 pr-2 ";
+  const baseStyles = "bg-accent-foreground dark:bg-secondary dark:text-primary  text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border shadow-md mt-2 pr-2 ";
   
   // Estilos específicos para cada variante
   const variantStyles = {
-    default: "",
-    secondary: "mb-3"
+    default: "bg-sidebar ",
+    secondary: "mb-3 text-white "
     // Adicione mais variantes conforme necessário
   };
   
@@ -114,7 +114,7 @@ function SelectLabel({
   return (
     <SelectPrimitive.Label
       data-slot="select-label"
-      className={cn("px-2 py-1.5 text-sm font-medium", className)}
+      className={cn("px-2 py-1.5 text-sm font-medium ", className)}
       {...props}
     />
   )
@@ -129,12 +129,12 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full  items-center gap-2 rounded-sm py-1.5 pr-1 pl-1 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 cursor-pointer ",
+        "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full  items-center gap-2 rounded-sm py-1.5 pr-1 pl-1 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 cursor-pointer dark:hover:bg-ring ",
         className
       )}
       {...props}
     >
-      <span className="absolute right-2 flex size-3.5 items-center justify-center">
+      <span className="absolute right-2 flex size-3.5 items-center justify-center ">
         <SelectPrimitive.ItemIndicator>
           <CheckIcon className="size-4 " />
         </SelectPrimitive.ItemIndicator>

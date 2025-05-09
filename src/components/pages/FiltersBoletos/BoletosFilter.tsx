@@ -18,7 +18,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Search, X } from "lucide-react";
 import { Table } from "@tanstack/react-table";
-import { Parcela } from '../../../types/parcela';
+import { Parcela } from '@/types/parcela';
 
 interface DateRange {
   start: Date | null;
