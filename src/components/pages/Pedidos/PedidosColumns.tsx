@@ -8,6 +8,8 @@ import axios from "axios";
 import { toast } from "sonner";
 
 interface Pedido {
+  duplicateCount: React.ReactNode;
+  hasDuplicates: any;
   status: any;
   grupo: string;
   filial: string;
@@ -72,11 +74,14 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
       filterFn: numericFilter,
       cell: ({ row }) => {
         const numeroPedido = row.getValue("numeroPedido");
+        
 
         const hasNotaFiscal =
           numeroPedido !== null &&
           numeroPedido !== undefined &&
           numeroPedido !== "";
+
+          
 
           const handleViewPedido = async (e: React.MouseEvent) => {
             e.preventDefault();

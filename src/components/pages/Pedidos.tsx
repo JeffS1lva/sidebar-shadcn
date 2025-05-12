@@ -159,19 +159,10 @@ export const Pedidos: React.FC = () => {
 
       if (Array.isArray(pedidosData)) {
         // Remover duplicatas por numeroPedido
-        const uniquePedidos = pedidosData.reduce((acc, current) => {
-          const isDuplicate = acc.find(
-            (item: { numeroPedido: any }) =>
-              item.numeroPedido === current.numeroPedido
-          );
-          if (!isDuplicate) {
-            return acc.concat([current]);
-          }
-          return acc;
-        }, []);
+        
 
         // Ordenação decrescente
-        uniquePedidos.sort(
+        pedidosData.sort(
           (
             a: { dataLancamentoPedido: string | number | Date },
             b: { dataLancamentoPedido: string | number | Date }
@@ -203,8 +194,8 @@ export const Pedidos: React.FC = () => {
           }
         );
 
-        setAllPedidos(uniquePedidos);
-        setPedidos(uniquePedidos);
+        setAllPedidos(pedidosData);
+        setPedidos(pedidosData);
       } else {
         setAllPedidos([]);
         setPedidos([]);
