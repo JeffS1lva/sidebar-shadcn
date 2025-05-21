@@ -11,12 +11,13 @@ import {
   Navigate,
   useNavigate,
 } from "react-router-dom";
-import { Home } from "./components/pages/Home";
+import { Init } from "./components/pages/Home";
 import { LoginForm } from "./components/auth/LoginForm";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "./components/Dark-Mode/ThemeProvider";
 import { ModeToggle } from "./components/Dark-Mode/ModeToggle";
 import CookieConsent from "./components/auth/cookies/CookieConsent";
+import PedidoTruck from "./components/pages/Pedidos/PedidoTruck";
 
 // Define a interface para os dados do usuário
 interface UserData {
@@ -114,10 +115,11 @@ export function App() {
                     onLogout={handleLogout}
                   >
                     <Routes>
-                      <Route path="/inicio" element={<Home />} />
+                      <Route path="/inicio" element={<Init />} />
                       <Route path="/pedidos" element={<Pedidos />} />
                       <Route path="/cotacao" element={<Cotacao />} />
                       <Route path="/boletos" element={<Boletos />} />
+                      <Route path="/rastreio-pedidos" element={<PedidoTruck />} />
                       {/* Redireciona para home se a rota não corresponder */}
                       <Route path="*" element={<Navigate to="/inicio" replace />} />
                     </Routes>

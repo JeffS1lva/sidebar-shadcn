@@ -104,7 +104,7 @@ export const LargeScreenLayout: React.FC<LargeScreenLayoutProps> = ({
             <ModeToggle/>
           </div>
           {showTooltip && (
-            <div className="absolute right-0 top-12 w-64 bg-background border border-border rounded-lg p-4 shadow-lg z-50">
+            <div className="absolute right-0 top-12 w-60 bg-background border border-border rounded-lg p-4 shadow-lg ">
               <div className="absolute -top-2 right-4 w-4 h-4 bg-background border-t border-l border-border transform rotate-45"></div>
               <div className="text-lg font-medium mb-1">Alternar Tema</div>
               <div className="text-lg text-muted-foreground">
@@ -130,8 +130,8 @@ export const LargeScreenLayout: React.FC<LargeScreenLayoutProps> = ({
         }`}
       >
         {/* FirstAccess toggle positioned at the top of the container */}
-        <div className="absolute top-4 right-4 z-50">
-          <div className="relative">
+        <div className="absolute top-4 right-4 ">
+          <div className="relative ">
             <FirstAcess
               onToggle={handleFirstAccessToggle}
               isFirstAccess={isFirstAccess}
@@ -241,9 +241,9 @@ export const LargeScreenLayout: React.FC<LargeScreenLayoutProps> = ({
           className="w-1/2 bg-background flex flex-col justify-center items-center"
         >
           {/* Centered login content without Card/borders */}
-          <div className="p-6 w-full max-w-md">
+          <div className="p-6 w-full max-w-md ">
             <div className="relative">
-              <div className="mb-6">{renderHeaderContent()}</div>
+              <div className="mb-6 ">{renderHeaderContent()}</div>
               {children}
             </div>
           </div>

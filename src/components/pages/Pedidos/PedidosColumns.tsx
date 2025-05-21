@@ -2,10 +2,26 @@
 
 import * as React from "react";
 import { ColumnDef, type FilterFn } from "@tanstack/react-table";
-import { Circle, Eye, Package, PackageOpen, PackageSearch } from "lucide-react";
+import {
+  AlertCircle,
+  Ban,
+  Check,
+  Circle,
+  Eye,
+  Package,
+  PackageOpen,
+  PackageSearch,
+  ShoppingCart,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Pedido {
   duplicateCount: React.ReactNode;
@@ -26,31 +42,56 @@ interface Pedido {
   statusPicking: string;
   notaFiscal: string;
   chaveNFe: string;
+  statusNotaFiscal?: string; // Nova propriedade adicionada
 }
 
+// Função getStatusConfig atualizada
 export const getStatusConfig = (status: string) => {
   const config: {
     classes: string;
     icon: JSX.Element;
-    text?: string;
+    text: string;
   } = {
     classes: "",
     icon: <Circle className="h-3 w-3 mr-1" />,
+    text: status, // Valor padrão é o próprio status recebido
   };
 
   switch (status) {
     case "Aberto":
       config.classes = "w-32 bg-yellow-100 text-yellow-800";
       config.icon = <PackageOpen className="h-3 w-3 mr-1" />;
+      config.text = "Aberto";
       break;
     case "Fechado":
       config.classes = "w-32 bg-green-100 text-green-800";
       config.icon = <Package className="h-3 w-3 mr-1" />;
+      config.text = "Fechado";
+      break;
+    case "Cancelado":
+      config.classes = "w-32 bg-red-100 text-red-800";
+      config.icon = <Ban className="h-3 w-3 mr-1" />;
+      config.text = "Cancelado";
+      break;
+    case "Liberado":
+      config.classes = "w-32 bg-blue-100 text-blue-800";
+      config.icon = <Check className="h-3 w-3 mr-1" />;
+      config.text = "Liberado";
+      break;
+    case "Picking eft.":
+      config.classes = "w-32 bg-purple-100 text-purple-800";
+      config.icon = <ShoppingCart className="h-3 w-3 mr-1" />;
+      config.text = "Picking eft.";
+      break;
+    case "Indisponível":
+      config.classes = "w-32 bg-red-200 text-gray-800";
+      config.icon = <AlertCircle className="h-3 w-3 mr-1" />;
+      config.text = "Indisponível";
       break;
     default:
-      config.classes = " w-32 bg-zinc-300 text-gray-800";
+      config.classes = "w-32 bg-zinc-300 text-gray-800";
       config.icon = <PackageSearch className="h-3 w-3 mr-1" />;
-      config.text = "Em andamento";
+      config.text = status || "Desconhecido";
   }
 
   return config;
@@ -66,7 +107,7 @@ export const numericFilter: FilterFn<Pedido> = (row, columnId, filterValue) => {
 
 export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
   const navigate = useNavigate();
-  
+
   return [
     {
       accessorKey: "numeroPedido",
@@ -74,169 +115,207 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
       filterFn: numericFilter,
       cell: ({ row }) => {
         const numeroPedido = row.getValue("numeroPedido");
-        
 
         const hasNotaFiscal =
           numeroPedido !== null &&
           numeroPedido !== undefined &&
           numeroPedido !== "";
 
-          
+        const handleViewPedido = async (e: React.MouseEvent) => {
+          e.preventDefault();
 
-          const handleViewPedido = async (e: React.MouseEvent) => {
-            e.preventDefault();
-          
-            if (!hasNotaFiscal) return;
-          
-            try {
-              const token = localStorage.getItem("token");
-              if (!token) {
-                navigate("/login");
-                return;
+          if (!hasNotaFiscal) return;
+
+          try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+              navigate("/login");
+              return;
+            }
+
+            const pedidoId = numeroPedido.toString();
+            const loadingId = `loading-pedido-${pedidoId}`;
+
+            // Loading aprimorado com o mesmo estilo do boleto
+            const loadingEl = document.createElement("div");
+            loadingEl.id = loadingId;
+            loadingEl.className =
+              "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50";
+            loadingEl.innerHTML = `
+              <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col items-center max-w-md">
+                <div class="relative mb-4">
+                  <div class="h-16 w-16 rounded-full border-t-2 border-b-2 border-blue-500 animate-spin"></div>
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-blue-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  </div>
+                </div>
+                <p class="font-medium text-gray-900 dark:text-white">Carregando Pedido de Venda... </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Aguarde um momento</p>
+              </div>
+            `;
+            document.body.appendChild(loadingEl);
+
+            const response = await axios.get(
+              `/api/external/Pedidos/imprime-pedido/${numeroPedido}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  Accept: "application/pdf",
+                },
+                responseType: "blob",
               }
-          
-              const pedidoId = numeroPedido.toString();
-              const loadingId = `loading-pedido-${pedidoId}`;
-          
-              // Loading aprimorado com o mesmo estilo do boleto
-              const loadingEl = document.createElement("div");
-              loadingEl.id = loadingId;
-              loadingEl.className =
-                "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50";
-              loadingEl.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col items-center max-w-md">
-                  <div class="relative mb-4">
-                    <div class="h-16 w-16 rounded-full border-t-2 border-b-2 border-blue-500 animate-spin"></div>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-blue-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            );
+
+            document.getElementById(loadingId)?.remove();
+
+            const contentType = response.headers["content-type"];
+            if (!contentType || !contentType.includes("application/pdf")) {
+              throw new Error("Resposta não é um PDF válido");
+            }
+
+            const blob = new Blob([response.data], { type: "application/pdf" });
+            const fileUrl = URL.createObjectURL(blob);
+
+            // Detectar dispositivo móvel e especialmente Android
+            const isMobile =
+              /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                navigator.userAgent
+              );
+            const isAndroid = /Android/i.test(navigator.userAgent);
+
+            // Nova interface do visualizador seguindo o padrão dos boletos
+            const viewerContainer = document.createElement("div");
+            viewerContainer.id = `pedido-viewer-${pedidoId}`;
+            viewerContainer.className =
+              "fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-50";
+
+            // Criar conteúdo do visualizador adaptado para diferentes dispositivos
+            viewerContainer.innerHTML = `
+              <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] h-full flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800 transition-all duration-300 opacity-0 scale-95" id="viewer-container-${pedidoId}">
+                <!-- Cabeçalho com gradiente -->
+                <div class="bg-gradient-to-r from-sky-900 to-zinc-800 p-5 text-white">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                      <div class="bg-white/20 p-2 rounded-lg mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                      </div>
+                      <div>
+                        <h3 class="text-lg font-bold">Pedido de Venda #${pedidoId}</h3>
+                        <div class="flex items-center text-sm text-white/80">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3 mr-1"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                          <span>Documento oficial</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <a href="${fileUrl}" download="pedido-${pedidoId}.pdf" 
+                        class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-sky-800 hover:bg-blue-50 shadow-sm gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download
+                      </a>
+                      <button id="close-viewer-${pedidoId}" 
+                        class="inline-flex items-center justify-center p-2 rounded-lg text-sm font-medium transition-all bg-white/10 hover:bg-white/20 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      </button>
                     </div>
                   </div>
-                  <p class="font-medium text-gray-900 dark:text-white">Carregando Pedido de Venda... </p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Aguarde um momento</p>
                 </div>
-              `;
-              document.body.appendChild(loadingEl);
-          
-              const response = await axios.get(
-                `/api/external/Pedidos/imprime-pedido/${numeroPedido}`,
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: "application/pdf",
-                  },
-                  responseType: "blob",
-                }
-              );
-          
-              document.getElementById(loadingId)?.remove();
-          
-              const contentType = response.headers["content-type"];
-              if (!contentType || !contentType.includes("application/pdf")) {
-                throw new Error("Resposta não é um PDF válido");
-              }
-          
-              const blob = new Blob([response.data], { type: "application/pdf" });
-              const fileUrl = URL.createObjectURL(blob);
-          
-              // Nova interface do visualizador seguindo o padrão dos boletos
-              const viewerContainer = document.createElement("div");
-              viewerContainer.id = `pedido-viewer-${pedidoId}`;
-              viewerContainer.className =
-                "fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-50";
-          
-              viewerContainer.innerHTML = `
-                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] h-full flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800 transition-all duration-300 opacity-0 scale-95" id="viewer-container-${pedidoId}">
-                  <!-- Cabeçalho com gradiente -->
-                  <div class="bg-gradient-to-r from-sky-900 to-zinc-800 p-5 text-white">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center">
-                        <div class="bg-white/20 p-2 rounded-lg mr-3">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        </div>
-                        <div>
-                          <h3 class="text-lg font-bold">Pedido de Venda #${pedidoId}</h3>
-                          <div class="flex items-center text-sm text-white/80">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3 mr-1"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                            <span>Documento oficial</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex gap-2">
-                        <a href="${fileUrl}" download="pedido-${pedidoId}.pdf" 
-                          class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-sky-800 hover:bg-blue-50 shadow-sm gap-1.5">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                          Download
-                        </a>
-                        <button id="close-viewer-${pedidoId}" 
-                          class="inline-flex items-center justify-center p-2 rounded-lg text-sm font-medium transition-all bg-white/10 hover:bg-white/20 text-white">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </button>
-                      </div>
-                    </div>
+                
+                <!-- Área do conteúdo -->
+                <div class="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900 relative" id="iframe-container-${pedidoId}">
+                  <!-- Gradiente superior -->
+                  <div class="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-slate-400 dark:from-gray-800 to-transparent z-10"></div>
+                  
+                  <!-- O iframe ou embed será inserido aqui via JavaScript -->
+                  <div id="pdf-content-${pedidoId}" class="w-full h-full">
+                    <!-- Conteúdo inserido via JavaScript -->
                   </div>
                   
-                  <!-- Área do conteúdo -->
-                  <div class="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900 relative" id="iframe-container-${pedidoId}">
-                    <!-- Gradiente superior -->
-                    <div class="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-slate-400 dark:from-gray-800 to-transparent z-10"></div>
-                    
-                    <!-- O iframe será inserido aqui via JavaScript -->
-                    <iframe 
-                      src="${fileUrl}" 
-                      class="w-full h-full" 
-                      frameborder="0"
-                      allow="fullscreen"
-                    ></iframe>
-                    
-                    <!-- Barra de informações inferior -->
-                    <div class="absolute bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 border-t border-gray-200 dark:border-gray-800 py-2 px-4 flex items-center justify-between backdrop-blur-sm z-10">
-                      <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2 text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                        <span>Documento oficial • Válido para operações</span>
-                      </div>
-                      <div class="text-sm text-gray-500 dark:text-gray-400">
-                        ID: ${pedidoId}
-                      </div>
+                  <!-- Barra de informações inferior -->
+                  <div class="absolute bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 border-t border-gray-200 dark:border-gray-800 py-2 px-4 flex items-center justify-between backdrop-blur-sm z-10">
+                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2 text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                      <span>Documento oficial • Válido para operações</span>
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                      ID: ${pedidoId}
                     </div>
                   </div>
                 </div>
-              `;
-          
-              document.body.appendChild(viewerContainer);
-              
-              // Animar a entrada após um pequeno delay
-              setTimeout(() => {
-                const viewerEl = document.getElementById(`viewer-container-${pedidoId}`);
-                if (viewerEl) {
-                  viewerEl.classList.remove('opacity-0', 'scale-95');
-                  viewerEl.classList.add('opacity-100', 'scale-100');
-                }
-              }, 50);
-          
-              // Adicionar evento de fechamento com animação de saída
-              document
-                .getElementById(`close-viewer-${pedidoId}`)
-                ?.addEventListener("click", () => {
-                  const viewerElement = document.getElementById(
-                    `viewer-container-${pedidoId}`
-                  );
-                  if (viewerElement) {
-                    // Animar saída
-                    viewerElement.classList.remove('opacity-100', 'scale-100');
-                    viewerElement.classList.add('opacity-0', 'scale-95');
-                    
-                    // Remover após animação
-                    setTimeout(() => {
-                      const containerElement = document.getElementById(
-                        `pedido-viewer-${pedidoId}`
-                      );
-                      if (containerElement) {
-                        containerElement.remove();
-                      }
-                      URL.revokeObjectURL(fileUrl);
-                    }, 300);
-                  } else {
-                    // Fallback se o elemento não for encontrado
+              </div>
+            `;
+
+            document.body.appendChild(viewerContainer);
+
+            // Renderizar o PDF baseado no dispositivo
+            const pdfContentElement = document.getElementById(
+              `pdf-content-${pedidoId}`
+            );
+
+            if (pdfContentElement) {
+              if (isAndroid) {
+                // Para Android: use object tag em vez de iframe
+                pdfContentElement.innerHTML = `
+                  <object 
+                    data="${fileUrl}" 
+                    type="application/pdf" 
+                    class="w-full h-full">
+                    <div class="w-full h-full flex flex-col items-center justify-center">
+                      <p class="text-gray-600 dark:text-gray-300 mb-3">
+                        Não foi possível exibir o PDF diretamente.
+                      </p>
+                      <a href="${fileUrl}" target="_blank" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors">
+                        Abrir em nova aba
+                      </a>
+                    </div>
+                  </object>
+                `;
+              } else if (isMobile) {
+                // Para outros dispositivos móveis: embed tag
+                pdfContentElement.innerHTML = `
+                  <embed 
+                    src="${fileUrl}" 
+                    type="application/pdf" 
+                    class="w-full h-full">
+                `;
+              } else {
+                // Para desktop: iframe padrão
+                pdfContentElement.innerHTML = `
+                  <iframe 
+                    src="${fileUrl}" 
+                    class="w-full h-full" 
+                    frameborder="0"
+                    allow="fullscreen">
+                  </iframe>
+                `;
+              }
+            }
+
+            // Animar a entrada após um pequeno delay
+            setTimeout(() => {
+              const viewerEl = document.getElementById(
+                `viewer-container-${pedidoId}`
+              );
+              if (viewerEl) {
+                viewerEl.classList.remove("opacity-0", "scale-95");
+                viewerEl.classList.add("opacity-100", "scale-100");
+              }
+            }, 50);
+
+            // Adicionar evento de fechamento com animação de saída
+            document
+              .getElementById(`close-viewer-${pedidoId}`)
+              ?.addEventListener("click", () => {
+                const viewerElement = document.getElementById(
+                  `viewer-container-${pedidoId}`
+                );
+                if (viewerElement) {
+                  // Animar saída
+                  viewerElement.classList.remove("opacity-100", "scale-100");
+                  viewerElement.classList.add("opacity-0", "scale-95");
+
+                  // Remover após animação
+                  setTimeout(() => {
                     const containerElement = document.getElementById(
                       `pedido-viewer-${pedidoId}`
                     );
@@ -244,63 +323,83 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
                       containerElement.remove();
                     }
                     URL.revokeObjectURL(fileUrl);
+                  }, 300);
+                } else {
+                  // Fallback se o elemento não for encontrado
+                  const containerElement = document.getElementById(
+                    `pedido-viewer-${pedidoId}`
+                  );
+                  if (containerElement) {
+                    containerElement.remove();
                   }
-                });
-            } catch (error) {
-              const loadingId = `loading-pedido-${numeroPedido}`;
-              document.getElementById(loadingId)?.remove();
-          
-              // Mensagem de erro aprimorada
-              const errorEl = document.createElement("div");
-              errorEl.className =
-                "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50";
-              errorEl.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col items-center max-w-md">
-                  <div class="bg-red-100 dark:bg-red-900/30 p-4 rounded-full inline-flex items-center justify-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10 text-red-500"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                  </div>
-                  <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                    Não foi possível carregar o pedido
-                  </h3>
-                  <p class="text-gray-600 dark:text-gray-300 mb-6 text-center">
-                    Estamos com dificuldades para acessar este documento no momento. 
-                    Por favor, tente novamente mais tarde ou contate o suporte.
-                  </p>
-                  <button id="close-error" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors">
-                    Fechar
-                  </button>
+                  URL.revokeObjectURL(fileUrl);
+                }
+              });
+          } catch (error) {
+            const loadingId = `loading-pedido-${numeroPedido}`;
+            document.getElementById(loadingId)?.remove();
+
+            // Mensagem de erro aprimorada
+            const errorEl = document.createElement("div");
+            errorEl.className =
+              "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50";
+            errorEl.innerHTML = `
+              <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col items-center max-w-md">
+                <div class="bg-red-100 dark:bg-red-900/30 p-4 rounded-full inline-flex items-center justify-center mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10 text-red-500"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                 </div>
-              `;
-          
-              document.body.appendChild(errorEl);
-          
-              document
-                .getElementById("close-error")
-                ?.addEventListener("click", () => {
-                  errorEl.remove();
-                });
-            }
-          };
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Não foi possível carregar o pedido
+                </h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-6 text-center">
+                  Estamos com dificuldades para acessar este documento no momento. 
+                  Por favor, tente novamente mais tarde ou contate o suporte.
+                </p>
+                <button id="close-error" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors">
+                  Fechar
+                </button>
+              </div>
+            `;
+
+            document.body.appendChild(errorEl);
+
+            document
+              .getElementById("close-error")
+              ?.addEventListener("click", () => {
+                errorEl.remove();
+              });
+          }
+        };
 
         return (
           <div className="flex items-center gap-2">
-            <span className="block  text-center font-medium min-w-[50px]">
+            <span className="block text-center font-medium min-w-[50px]">
               {hasNotaFiscal ? numeroPedido.toString() : "N/A"}
             </span>
             <div className="flex gap-1">
-              <button
-                title={
-                  hasNotaFiscal ? "Visualizar Pedido" : "Pedido não disponível"
-                }
-                onClick={handleViewPedido}
-                disabled={!hasNotaFiscal}
-                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 cursor-pointer ${
-                  !hasNotaFiscal ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                <Eye className="h-4 w-4" />
-                <span className="sr-only">Visualizar</span>
-              </button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleViewPedido}
+                      disabled={!hasNotaFiscal}
+                      className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 cursor-pointer ${
+                        !hasNotaFiscal ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span className="sr-only">Visualizar</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {hasNotaFiscal
+                        ? "Visualizar Pedido"
+                        : "Pedido não disponível"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         );
@@ -461,13 +560,28 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
         const notaFiscal = row.getValue("notaFiscal");
         const companyCode = row.original.filial || "";
         const chaveNFe = row.original.chaveNFe || "";
+        const statusNotaFiscal = row.original.statusNotaFiscal || "";
 
-        const hasNotaFiscal = notaFiscal && companyCode && chaveNFe;
+        // Verifica se a nota fiscal foi cancelada
+        // Corrigindo a verificação para aceitar tanto "Cancelada" quanto "Cancelado"
+        const isNotaCancelled =
+          statusNotaFiscal === "Cancelada" || statusNotaFiscal === "Cancelado";
 
-        const handleDownloadXML = async (e: React.MouseEvent) => {
+        // Log para debug
+       
+
+        // Verificamos se temos acesso aos dados para download/visualização
+        const hasDownloadAccess =
+          notaFiscal && companyCode && chaveNFe && !isNotaCancelled;
+
+        const handleDownloadXML = async (e: {
+          preventDefault: () => void;
+          stopPropagation: () => void;
+        }) => {
           e.preventDefault();
+          e.stopPropagation();
 
-          if (!hasNotaFiscal) return;
+          if (!hasDownloadAccess) return;
 
           try {
             const token = localStorage.getItem("token");
@@ -517,22 +631,26 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
           }
         };
 
-        const handleViewDANFE = async (e: React.MouseEvent) => {
+        const handleViewDANFE = async (e: {
+          preventDefault: () => void;
+          stopPropagation: () => void;
+        }) => {
           e.preventDefault();
-        
-          if (!hasNotaFiscal) return;
-        
+          e.stopPropagation();
+
+          if (!hasDownloadAccess) return;
+
           try {
             const token = localStorage.getItem("token");
             if (!token) {
               navigate("/login");
               return;
             }
-        
+
             const notaId = notaFiscal.toString();
             const loadingId = `loading-danfe-${notaId}`;
-        
-            // Loading aprimorado com o mesmo estilo do boleto
+
+            // Loading aprimorado
             const loadingEl = document.createElement("div");
             loadingEl.id = loadingId;
             loadingEl.className =
@@ -550,7 +668,7 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
               </div>
             `;
             document.body.appendChild(loadingEl);
-        
+
             const response = await axios.get(`/api/external/Danfe/gerar`, {
               params: {
                 companyCode: companyCode,
@@ -562,23 +680,26 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
               },
               responseType: "blob",
             });
-        
+
             document.getElementById(loadingId)?.remove();
-        
+
             const contentType = response.headers["content-type"];
             if (!contentType || !contentType.includes("application/pdf")) {
               throw new Error("Resposta não é um PDF válido");
             }
-        
+
             const blob = new Blob([response.data], { type: "application/pdf" });
             const fileUrl = URL.createObjectURL(blob);
-        
-            // Nova interface do visualizador seguindo o padrão dos boletos
+
+            // Detectar se é um dispositivo móvel Android
+            const isAndroid = /Android/i.test(navigator.userAgent);
+
+            // Interface do visualizador
             const viewerContainer = document.createElement("div");
             viewerContainer.id = `danfe-viewer-${notaId}`;
             viewerContainer.className =
               "fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-50";
-        
+
             viewerContainer.innerHTML = `
               <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] h-full flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800 transition-all duration-300 opacity-0 scale-95" id="viewer-container-${notaId}">
                 <!-- Cabeçalho com gradiente -->
@@ -615,13 +736,7 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
                   <!-- Gradiente superior -->
                   <div class="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-slate-400 dark:from-gray-800 to-transparent z-10"></div>
                   
-                  <!-- O iframe será inserido aqui via JavaScript -->
-                  <iframe 
-                    src="${fileUrl}" 
-                    class="w-full h-full" 
-                    frameborder="0"
-                    allow="fullscreen"
-                  ></iframe>
+                  <!-- O conteúdo do PDF será inserido aqui via JavaScript -->
                   
                   <!-- Barra de informações inferior -->
                   <div class="absolute bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 border-t border-gray-200 dark:border-gray-800 py-2 px-4 flex items-center justify-between backdrop-blur-sm z-10">
@@ -636,18 +751,73 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
                 </div>
               </div>
             `;
-        
+
             document.body.appendChild(viewerContainer);
-            
+
+            // Obter o container onde será inserido o conteúdo do PDF
+            const iframeContainer = document.getElementById(
+              `iframe-container-${notaId}`
+            );
+
+            if (iframeContainer) {
+              // Criar elemento para exibir o PDF baseado no dispositivo
+              if (isAndroid) {
+                // Para Android: usar object em vez de iframe
+                const objectElement = document.createElement("object");
+                objectElement.setAttribute("data", fileUrl);
+                objectElement.setAttribute("type", "application/pdf");
+                objectElement.className = "w-full h-full";
+
+                // Mensagem para navegadores que não suportam PDF embutido
+                objectElement.innerHTML = `
+                  <div class="flex flex-col items-center justify-center h-full bg-gray-100 dark:bg-gray-800 p-6">
+                    <div class="text-center max-w-md">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 text-gray-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                      <p class="text-lg font-semibold mb-2">Este navegador não suporta PDFs embutidos</p>
+                      <p class="text-gray-600 dark:text-gray-300 mb-4">Clique no botão abaixo para baixar o documento e visualizá-lo.</p>
+                      <a href="${fileUrl}" download="danfe-${notaId}.pdf" class="inline-flex items-center justify-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Baixar PDF
+                      </a>
+                    </div>
+                  </div>
+                `;
+
+                iframeContainer.appendChild(objectElement);
+
+                // Fallback adicional para Android: adicionar link direto para abrir em nova guia
+                const fallbackLink = document.createElement("div");
+                fallbackLink.className = "absolute top-0 right-0 p-2 z-20";
+                fallbackLink.innerHTML = `
+                  <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" 
+                     class="inline-flex items-center justify-center px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg font-medium transition-colors shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    Abrir em nova guia
+                  </a>
+                `;
+                iframeContainer.appendChild(fallbackLink);
+              } else {
+                // Para outros dispositivos: usar o iframe padrão
+                const iframeElement = document.createElement("iframe");
+                iframeElement.setAttribute("src", fileUrl);
+                iframeElement.setAttribute("frameborder", "0");
+                iframeElement.setAttribute("allow", "fullscreen");
+                iframeElement.className = "w-full h-full";
+                iframeContainer.appendChild(iframeElement);
+              }
+            }
+
             // Animar a entrada após um pequeno delay
             setTimeout(() => {
-              const viewerEl = document.getElementById(`viewer-container-${notaId}`);
+              const viewerEl = document.getElementById(
+                `viewer-container-${notaId}`
+              );
               if (viewerEl) {
-                viewerEl.classList.remove('opacity-0', 'scale-95');
-                viewerEl.classList.add('opacity-100', 'scale-100');
+                viewerEl.classList.remove("opacity-0", "scale-95");
+                viewerEl.classList.add("opacity-100", "scale-100");
               }
             }, 50);
-        
+
             // Adicionar evento de fechamento com animação de saída
             document
               .getElementById(`close-viewer-${notaId}`)
@@ -657,9 +827,9 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
                 );
                 if (viewerElement) {
                   // Animar saída
-                  viewerElement.classList.remove('opacity-100', 'scale-100');
-                  viewerElement.classList.add('opacity-0', 'scale-95');
-                  
+                  viewerElement.classList.remove("opacity-100", "scale-100");
+                  viewerElement.classList.add("opacity-0", "scale-95");
+
                   // Remover após animação
                   setTimeout(() => {
                     const containerElement = document.getElementById(
@@ -684,7 +854,7 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
           } catch (error) {
             const loadingId = `loading-danfe-${notaFiscal.toString()}`;
             document.getElementById(loadingId)?.remove();
-        
+
             // Mensagem de erro aprimorada
             const errorEl = document.createElement("div");
             errorEl.className =
@@ -706,61 +876,143 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
                 </button>
               </div>
             `;
-        
+
             document.body.appendChild(errorEl);
-        
+
             document
               .getElementById("close-error")
               ?.addEventListener("click", () => {
                 errorEl.remove();
               });
+
           }
         };
 
-        return (
-          <div className="flex items-center gap-1 ">
-            <span className="block  text-center font-medium min-w-[50px]">
-              {hasNotaFiscal ? notaFiscal.toString() : "-"}
-            </span>
-            <div className="flex gap-1">
-              <button
-                title={
-                  hasNotaFiscal ? "Visualizar DANFE" : "DANFE não disponível"
-                }
-                onClick={handleViewDANFE}
-                disabled={!hasNotaFiscal}
-                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 cursor-pointer ${
-                  !hasNotaFiscal ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                <Eye className="h-4 w-4" />
-                <span className="sr-only">Visualizar DANFE</span>
-              </button>
+        // Definir estilos diretamente como objetos para garantir aplicação correta
+        const textClass = isNotaCancelled
+          ? "block text-center font-medium min-w-[50px] text-red-500 "
+          : "block text-center font-medium min-w-[50px]";
 
-              <button
-                title={hasNotaFiscal ? "Baixar XML" : "XML não disponível"}
-                onClick={handleDownloadXML}
-                disabled={!hasNotaFiscal}
-                className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 w-8 p-0 cursor-pointer ${
-                  !hasNotaFiscal ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
+        const buttonClass = (disabled: boolean) => {
+          let baseClass =
+            "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background h-8 w-8 p-0 ";
+
+          if (isNotaCancelled) {
+            return baseClass + "bg-red-500 hover:bg-red-600 text-white";
+          } else if (disabled) {
+            return (
+              baseClass +
+              "bg-primary text-primary-foreground opacity-50 cursor-not-allowed"
+            );
+          } else {
+            return (
+              baseClass +
+              "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+            );
+          }
+        };
+
+        // Determinar as mensagens para os tooltips
+        // Garantindo que o tooltip da nota fiscal sempre apareça quando estiver cancelada
+        const notaTooltipMessage = isNotaCancelled
+          ? "Nota fiscal cancelada"
+          : !notaFiscal || !companyCode || !chaveNFe
+          ? ""
+          : "";
+
+        const danfeTooltipMessage = isNotaCancelled
+          ? "DANFE cancelada"
+          : hasDownloadAccess
+          ? "Visualizar DANFE"
+          : "DANFE não disponível";
+
+        const xmlTooltipMessage = isNotaCancelled
+          ? "XML cancelado"
+          : hasDownloadAccess
+          ? "Baixar XML"
+          : "XML não disponível";
+
+        // Importamos os componentes do shadcn/ui necessários
+        return (
+          <div className="flex items-center gap-1">
+            {/* Usando o componente Tooltip do shadcn/ui */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={textClass}
+                  data-status={isNotaCancelled ? "cancelada" : ""}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
-                  />
-                </svg>
-                <span className="sr-only">Download XML</span>
-              </button>
+                  {notaFiscal ? notaFiscal.toString() : "-"}
+                </span>
+              </TooltipTrigger>
+              {(isNotaCancelled || notaTooltipMessage) && (
+                <TooltipContent className="bg-white text-red-800 border border-red-200 shadow-md px-3 py-1.5 rounded-md text-sm">
+                  <p>
+                    {isNotaCancelled
+                      ? "Nota fiscal cancelada"
+                      : notaTooltipMessage}
+                  </p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+
+            <div className="flex gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleViewDANFE}
+                    disabled={!hasDownloadAccess}
+                    className={buttonClass(!hasDownloadAccess)}
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span className="sr-only">Visualizar DANFE</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent
+                  className={
+                    isNotaCancelled
+                      ? "bg-white text-red-800 border border-red-200"
+                      : ""
+                  }
+                >
+                  <p>{danfeTooltipMessage}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleDownloadXML}
+                    disabled={!hasDownloadAccess}
+                    className={buttonClass(!hasDownloadAccess)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                      />
+                    </svg>
+                    <span className="sr-only">Download XML</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent
+                  className={
+                    isNotaCancelled
+                      ? "bg-white text-red-800 border border-red-200"
+                      : ""
+                  }
+                >
+                  <p>{xmlTooltipMessage}</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         );

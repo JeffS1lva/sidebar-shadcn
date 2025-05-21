@@ -155,15 +155,16 @@ export const useBoletoViewer = () => {
               headers: { Authorization: `Bearer ${token}` }
             });
             parcelaData = parcelaResponse.data;
-            console.log("Dados da parcela carregados com sucesso:", parcelaData);
           } catch (error) {
-            console.error("Erro ao buscar detalhes da parcela:", error);
             // Continua mesmo se não conseguir a parcela
           }
         }
 
+        // Detectar sistema operacional do usuário
+        const isAndroid = /Android/i.test(navigator.userAgent);
+
         // Criar container do visualizador com design moderno
-        createBoletoViewerDOM(boletoId, parcelaId, fileUrl, parcelaData);
+        createBoletoViewerDOM(boletoId, parcelaId, fileUrl, parcelaData, isAndroid);
       } catch (error) {
         // Remover loading
         const loadingElement = document.getElementById(loadingId);
@@ -186,17 +187,26 @@ export const useBoletoViewer = () => {
   return { showBoletoViewer };
 };
 
-// Função createBoletoViewerDOM modificada para NUNCA criar datas aleatórias
-// Função createBoletoViewerDOM modificada para usar o valor da parcela da tabela
-// Função createBoletoViewerDOM modificada para usar corretamente o valor da parcela da tabela
-// Função createBoletoViewerDOM modificada para remover valor e status
-const createBoletoViewerDOM = (boletoId: string | number, parcelaId: string | number, fileUrl: string, parcela: any = null) => {
+// Função modificada para suportar dispositivos Android
+export const createBoletoViewerDOM = (
+  boletoId: string | number, 
+  parcelaId: string | number, 
+  fileUrl: string, 
+  parcela: any = null,
+  isAndroid: boolean = false
+) => {
   // INICIALIZAÇÃO DE VARIÁVEIS - SEM VALORES ALEATÓRIOS
   let formattedDueDate = "Não disponível";
   let numeroNF = "";
   let dataVencimentoObj: Date | null = null;
   
+  // Flag para boleto cancelado
+  let isCanceled = false;
+  
   if (parcela) {
+    // Verificar se o boleto está cancelado
+    isCanceled = parcela.status === "Cancelado";
+    
     // Formatação da data de vencimento
     if (parcela.dataVencimento) {
       try {
@@ -205,23 +215,19 @@ const createBoletoViewerDOM = (boletoId: string | number, parcelaId: string | nu
         // Verificar se a data é válida
         if (!isNaN(dataVencimentoObj.getTime())) {
           formattedDueDate = formatDatePtBr(parcela.dataVencimento);
-          console.log("Data de vencimento formatada:", formattedDueDate);
         } else {
-          console.warn("Data de vencimento inválida:", parcela.dataVencimento);
           formattedDueDate = "Data inválida";
         }
       } catch (error) {
-        console.error("Erro ao processar data de vencimento:", error);
         formattedDueDate = "Erro na data";
       }
     } else {
-      console.warn("Parcela sem data de vencimento definida");
     }
     
     // Número da nota fiscal
     numeroNF = parcela.numNF || "";
   } else {
-    console.warn("Nenhum dado de parcela disponível para o boleto", boletoId, parcelaId);
+    
     formattedDueDate = "Não disponível";
   }
 
@@ -268,6 +274,12 @@ const createBoletoViewerDOM = (boletoId: string | number, parcelaId: string | nu
     vencimentoBadge = `<span class="${vencimentoColor} text-xs px-2 py-0.5 rounded-full ml-2">${statusVencimento}</span>`;
   }
 
+  // Badge de cancelamento - novo
+  let canceladoBadge = "";
+  if (isCanceled) {
+    canceladoBadge = `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full ml-2">Cancelado</span>`;
+  }
+
   // Criar container do visualizador
   const viewerContainer = document.createElement("div");
   viewerContainer.id = `boleto-viewer-${boletoId}`;
@@ -277,8 +289,8 @@ const createBoletoViewerDOM = (boletoId: string | number, parcelaId: string | nu
   // Adicionar HTML para o visualizador com design aprimorado
   viewerContainer.innerHTML = `
     <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] h-full flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800 transition-all duration-300 opacity-0 scale-95" id="viewer-container-${boletoId}">
-      <!-- Cabeçalho com gradiente -->
-      <div class="bg-gradient-to-r from-sky-900 to-zinc-800 p-5 text-white">
+      <!-- Cabeçalho com gradiente ${isCanceled ? 'bg-gradient-to-r from-red-900 to-red-800' : 'bg-gradient-to-r from-sky-900 to-zinc-800'} -->
+      <div class="${isCanceled ? 'bg-gradient-to-r from-red-900 to-red-800' : 'dark:bg-gradient-to-r dark:from-sky-900 dark:to-slate-900'} p-5 text-white">
         <div class="flex items-center justify-between">
           <div class="flex items-center">
             <div class="bg-white/20 p-2 rounded-lg mr-3">
@@ -291,16 +303,26 @@ const createBoletoViewerDOM = (boletoId: string | number, parcelaId: string | nu
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3 mr-1"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                   <span>Vencimento: ${formattedDueDate}</span>
                   ${vencimentoBadge}
+                  ${canceladoBadge}
                 </div>
               </div>
             </div>
           </div>
           <div class="flex gap-2">
-            <a href="${fileUrl}" download="boleto-${boletoId || parcelaId}.pdf" 
-              class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-sky-800 hover:bg-blue-50 shadow-sm gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              Download
-            </a>
+            <!-- Botão de download com tooltip caso cancelado -->
+            <div class="relative group">
+              <a href="${fileUrl}" download="boleto-${boletoId || parcelaId}.pdf" 
+                class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${isCanceled ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-white text-sky-800 hover:bg-blue-50'} shadow-sm gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download
+              </a>
+              ${isCanceled ? `
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
+                Este boleto foi cancelado
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-t-4 border-l-4 border-r-4 border-gray-900 border-l-transparent border-r-transparent"></div>
+              </div>
+              ` : ''}
+            </div>
             <button id="close-viewer-${boletoId}" 
               class="inline-flex items-center justify-center p-2 rounded-lg text-sm font-medium transition-all bg-white/10 hover:bg-white/20 text-white">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -314,18 +336,54 @@ const createBoletoViewerDOM = (boletoId: string | number, parcelaId: string | nu
         <!-- Gradiente superior -->
         <div class="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-slate-400 dark:from-gray-800 to-transparent z-10"></div>
         
-        <!-- O iframe será inserido aqui via JavaScript -->
+        ${isAndroid ? `
+        <!-- Para Android: usar object em vez de iframe para melhor compatibilidade -->
+        <object data="${fileUrl}" type="application/pdf" class="w-full h-full">
+          <!-- Mensagem para navegadores que não suportam PDF embutido -->
+          <div class="flex flex-col items-center justify-center h-full bg-gray-100 dark:bg-gray-800 p-6">
+            <div class="text-center max-w-md">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 text-gray-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <p class="text-lg font-semibold mb-2">Este navegador não suporta PDFs embutidos</p>
+              <p class="text-gray-600 dark:text-gray-300 mb-4">Clique no botão abaixo para baixar o documento e visualizá-lo.</p>
+              <a href="${fileUrl}" download="boleto-${boletoId || parcelaId}.pdf" class="inline-flex items-center justify-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Baixar PDF
+              </a>
+            </div>
+          </div>
+        </object>
+        
+        <!-- Fallback adicional para Android: adicionar link direto para abrir em nova guia -->
+        <div class="absolute top-0 right-0 p-2 z-20">
+          <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" 
+             class="inline-flex items-center justify-center px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg font-medium transition-colors shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            Abrir em nova guia
+          </a>
+        </div>
+        ` : ''}
         
         <!-- Barra de informações inferior -->
         <div class="absolute bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 border-t border-gray-200 dark:border-gray-800 py-2 px-4 flex items-center justify-between backdrop-blur-sm z-10">
           <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2 text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            <span>Documento oficial • Válido para pagamento</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${isCanceled ? 'h-4 w-4 mr-2 text-red-500' : 'h-4 w-4 mr-2 text-green-500'}">
+              ${isCanceled ? '<path d="M10 12l4 4m0 -4l-4 4M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-16a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2z"></path>' : '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>'}
+            </svg>
+            <span>${isCanceled ? 'Documento cancelado • Não válido para pagamento' : 'Documento oficial • Válido para pagamento'}</span>
           </div>
           <div class="text-sm text-gray-500 dark:text-gray-400">
             ID: ${boletoId || parcelaId}
           </div>
         </div>
+        
+        ${isCanceled ? `
+        <!-- Banner de cancelamento para boletos cancelados -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="transform rotate-45 bg-red-600/80 text-white py-2 px-24 text-2xl font-bold">
+            CANCELADO
+          </div>
+        </div>
+        ` : ''}
       </div>
     </div>
   `;
@@ -342,12 +400,12 @@ const createBoletoViewerDOM = (boletoId: string | number, parcelaId: string | nu
     }
   }, 50);
 
-  // Criar e adicionar o iframe
+  // Criar e adicionar o iframe apenas se não for Android
   const iframeContainer = document.getElementById(
     `iframe-container-${boletoId}`
   );
   
-  if (iframeContainer) {
+  if (iframeContainer && !isAndroid) {
     const iframe = document.createElement("iframe");
     iframe.src = fileUrl;
     iframe.className = "w-full h-full";
@@ -355,7 +413,8 @@ const createBoletoViewerDOM = (boletoId: string | number, parcelaId: string | nu
     iframe.setAttribute("allow", "fullscreen");
 
     // Monitorar carregamento
-    iframe.onload = () => {};
+    iframe.onload = () => {
+    };
     iframe.onerror = () => {
       // Adicionar mensagem de erro no container com design aprimorado
       iframeContainer.innerHTML += `
@@ -371,11 +430,18 @@ const createBoletoViewerDOM = (boletoId: string | number, parcelaId: string | nu
               Estamos com dificuldades para acessar este documento no momento. 
               Você pode fazer o download do arquivo e visualizá-lo localmente.
             </p>
-            <a href="${fileUrl}" download="boleto-${boletoId || parcelaId}.pdf" 
-               class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors inline-flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              Baixar Boleto
-            </a>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+              <a href="${fileUrl}" target="_blank" 
+                 class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors inline-flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                Abrir em Nova Aba
+              </a>
+              <a href="${fileUrl}" download="boleto-${boletoId || parcelaId}.pdf" 
+                 class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white rounded-lg font-medium transition-colors inline-flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Baixar Boleto
+              </a>
+            </div>
           </div>
         </div>
       `;
@@ -429,7 +495,12 @@ const handleBoletoError = (error: unknown, navigate: NavigateFunction) => {
     if (status === 404) {
       toast.error("Boleto não encontrado", {
         description:
-          "O sistema não conseguiu localizar este boleto. Verifique se o código está correto.",
+          "Este Boleto não está disponível.",
+          style: {
+            backgroundColor: "white",
+            color: "red",
+            boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.4)",
+          },
       });
     } else if (status === 401 || status === 403) {
       toast.error("Acesso não autorizado", {

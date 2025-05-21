@@ -9,5 +9,8 @@ export interface Parcela {
   dataVencimento: string;
   dataPagamento: string;
   status: string;
+  filial?: string;
+  chaveNFe?: string;
+  statusNotaFiscal?: string;
   id: number;
 }

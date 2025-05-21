@@ -63,6 +63,7 @@ const getStatusConfig = (
       };
       break;
     case "gerado":
+    case "rejeitado":
     case "confirmado":
     case "remessa":
       config = {
@@ -160,7 +161,7 @@ const getStatusConfig = (
       break;
     case "cancelado":
       config = {
-        color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+        color: "bg-red-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
         label: "Cancelado",
         icon: (
           <svg

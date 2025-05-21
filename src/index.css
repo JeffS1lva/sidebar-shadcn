@@ -4,8 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-
-
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.13 0.028 261.692);
@@ -114,9 +112,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  
 }
-
 
 @layer base {
   * {
@@ -126,3 +122,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Scrollbar personalizada compatível com Tailwind v4 */
+.scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #6495ed transparent;
+}
+
+.scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--muted-foreground);
+  border-radius: 8px;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+
+

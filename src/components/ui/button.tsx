@@ -19,6 +19,8 @@ const buttonVariants = cva(
           "w-full flex justify-start text-auto cursor-pointer",
         bottomPassword:
           "bg-primary w-full text-primary-foreground shadow-xs hover:bg-primary/90 cursor-pointer",
+        bottomTrucker:
+          "text-md cursor-pointer hover:underline hover:underline-offset-3 dark:font-bold",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
         ghost:

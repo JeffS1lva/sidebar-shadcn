@@ -20,6 +20,7 @@ import ThemeAwareLogo from "./ThemeAwareLogo";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "next-themes";
 import { LargeScreenLayout } from "./Screen/LargeScreen";
+import { OnboardingTooltip } from "./OnboardingTooltip";
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   className,
@@ -30,6 +31,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const modeToggleRef = useRef<HTMLDivElement>(null);
   const [isLargeScreen, setIsLargeScreen] = useState<boolean>(false);
   useTheme();
+  const [showOnboarding, setShowOnboarding] = useState(true);
+
+  useEffect(() => {
+    const seenTooltip = localStorage.getItem("seen-onboarding-tooltip");
+    if (seenTooltip) {
+      setShowOnboarding(false);
+    }
+  }, []);
+
+  const handleCloseTooltip = () => {
+    localStorage.setItem("seen-onboarding-tooltip", "true");
+    setShowOnboarding(false);
+  };
 
   // Check screen size
   useEffect(() => {
@@ -78,7 +92,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           <div className="flex flex-col gap-6">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <motion.div whileTap={{ scale: 0.98 }} whileFocus={{ scale: 1.02 }}>
+              <motion.div
+                whileTap={{ scale: 0.98 }}
+                whileFocus={{ scale: 1.02 }}
+              >
                 <Input
                   id="email"
                   type="email"
@@ -102,7 +119,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             )}
 
             <div className="w-full">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
                 <Button
                   type="submit"
                   className="w-full relative"
@@ -229,14 +249,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <ModeToggle />
           </div>
           {showTooltip && (
-            <div className="absolute right-0 top-12 w-64 bg-background border border-border rounded-lg p-4 shadow-lg z-50">
+            <div className="absolute right-0 top-12 w-64 bg-background border border-border rounded-lg p-4 shadow-lg">
               <div className="absolute -top-2 right-4 w-4 h-4 bg-background border-t border-l border-border transform rotate-45"></div>
-              <div className="text-base font-medium mb-1">
-                Alternar Tema
-              </div>
+              <div className="text-base font-medium mb-1">Alternar Tema</div>
               <div className="text-sm text-muted-foreground">
-                Este botão permite mudar entre o tema claro e escuro do
-                site.
+                Este botão permite mudar entre o tema claro e escuro do site.
               </div>
               <div className="mt-3 text-right">
                 <Button
@@ -263,6 +280,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             onToggle={handleFirstAccessToggle}
             isFirstAccess={isFirstAccess}
           />
+          {showOnboarding && (
+            <OnboardingTooltip
+              onClose={handleCloseTooltip}
+              email={email}
+              onEmailChange={(newEmail) => setEmail(newEmail)}
+              onRequestAccess={() => console.log("Solicitando acesso...")}
+              navigateToLoginWithFirstAccess={navigateToLoginWithFirstAccess}
+            />
+          )}
         </div>
 
         <CardHeader>
@@ -331,7 +357,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           handleFirstAccessToggle={handleFirstAccessToggle}
           loading={loading}
         >
-          {renderFormContent()}
+          <div className="relative flex flex-col gap-4">
+            <div className="relative">
+              {showOnboarding && (
+                <OnboardingTooltip
+                  onClose={handleCloseTooltip}
+                  email={email}
+                  onEmailChange={(newEmail) => setEmail(newEmail)}
+                  onRequestAccess={() => console.log("Solicitando acesso...")}
+                  navigateToLoginWithFirstAccess={
+                    navigateToLoginWithFirstAccess
+                  }
+                />
+              )}
+            </div>
+            {renderFormContent()}
+          </div>
         </LargeScreenLayout>
       )}
     </>
